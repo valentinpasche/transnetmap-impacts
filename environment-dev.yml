@@ -1,0 +1,54 @@
+# environment-dev.yml (development, editable)
+name: transnetmap-dev
+channels:
+  - conda-forge
+channel_priority: strict
+
+dependencies:
+  # --- Python runtime ---
+  - python=3.12
+
+  # --- Core data stack ---
+  - numpy
+  - pandas
+  - polars
+  - pyarrow
+
+  # --- Graph algorithms ---
+  - networkx
+
+  # --- Database (PostgreSQL/PostGIS access) ---
+  - psycopg2
+  - sqlalchemy
+  # (Arrow Database Connectivity, polars engine 'adbc')
+  - adbc-driver-manager
+  - adbc-driver-postgresql
+
+  # --- Geo stack ---
+  - geopandas
+  - shapely
+  - pyproj
+
+  # --- Mapping / choropleths ---
+  - folium
+  - jenkspy
+
+  # --- Dev & docs (optional but recommended) ---
+  - pytest
+  - ruff
+  - black
+  - mkdocs
+  - mkdocs-material
+  - mkdocstrings
+  - mkdocstrings-python
+
+  # --- IDE ---
+  - spyder
+  - spyder-kernels
+
+  # --- Editable install of the package from this folder ---
+  - pip
+  - pip:
+      - -e .
+
+# Note: This project requires access to a PostgreSQL database with the PostGIS extension enabled.

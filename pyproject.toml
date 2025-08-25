@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "transnetmap-impacts"            # INSTALL name
+version = "1.0.0"
+description = "Macro-scale analysis of new transport networks vs existing ones, with impact heatmaps."
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{ name = "Valentin Pasche", email = "valentin.pasche@etml-es.ch" }]
+license = { text = "TBD" }
+# keep empty because libs are manage via conda-forge
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/valentinpasche/transnetmap-impacts"
+Issues   = "https://github.com/valentinpasche/transnetmap-impacts/issues"
+
+[tool.setuptools]
+package-dir = {"" = "src"}              # look for packages under src/
+
+[tool.setuptools.packages.find]
+where = ["src"]                          # scan src/
+include = ["transnetmap*"]               # ONLY ship transnetmap package
+exclude = ["tests*", "docs*", "examples*", "build*", "dist*"]
