@@ -1,0 +1,1 @@
+> This package requires access to a PostgreSQL database with the PostGIS extension enabled.
