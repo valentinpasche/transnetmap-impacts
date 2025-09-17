@@ -9,7 +9,7 @@ import polars as pl
 raw_file_path = pathlib.Path(r"...")
 
 # Temporary backup folder
-temp_folder_path = pathlib.Path("datasets/get_started")
+temp_folder_path = pathlib.Path("get_started/inputs")
 
 # Constants for OD matrix
 no_relations_value = 999999
