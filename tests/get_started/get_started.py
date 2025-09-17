@@ -81,6 +81,8 @@ nptm.to_sql(
 stations = pre.Stations(config)
 stations.read_csv(data_folder / "stations_1.csv")
 
+stations.show()
+
 
 # ------------------------------
 # === Links between stations ===

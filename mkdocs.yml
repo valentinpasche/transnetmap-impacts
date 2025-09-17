@@ -103,12 +103,25 @@ plugins:
   - section-index
 
 markdown_extensions:
+  # Attributes on images/links, Markdown in HTML tags
+  - attr_list
+  - md_in_html
+
+  # Useful blocks and extensions
   - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+
+  # Tables and table of contents
   - tables
   - toc:
       permalink: true
       toc_depth: 3
-  - pymdownx.snippets
 
 extra_css:
   - assets/extra.css
