@@ -1,19 +1,46 @@
 # -*- coding: utf-8 -*-
+"""
+Network builder/visualizer for stations + links (transnetmap).
 
-from typing import Union
+This module defines the class `Network`, which combines station and link data to create
+geometries (lines) and provides helpers to persist/read to/from PostgreSQL and to
+visualize the network with Folium.
+"""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Dict, Optional, Tuple, Union
+
 from transnetmap.utils.config import ParamConfig
 from transnetmap.pre.network_child import Stations, Links
 
+if TYPE_CHECKING:  # noqa: F401
+    import folium
+    from folium import FeatureGroup  # for return type of show()
+    from branca.element import Figure # for return type of show_side_by_side()
+
+__all__ = ["Network"]
+
+
+# -----------------------------------------------------------------------------
+# Class: Network
+# -----------------------------------------------------------------------------
 class Network:
     """
     Represents a transportation network consisting of interconnected stations and links.
     This class provides methods to create, manipulate, and visualize network data, as well as
     interact with the database.
 
+    Constants
+    ---------
+    _type : str
+    
+        The type of object, always set to 'network'.
+    
     Attributes
     ----------
-    type : str
-        The type of object, always set to 'network'.
+    config : ParamConfig
+        Dataclass with validated configuration parameters.
     network_number : int
         The identification number of the network.
     db_nptm_schema : str
@@ -22,7 +49,7 @@ class Network:
         used in constructing dependent table names.
     table_name : str
         The name of the database table for the network, constructed as
-        'network_<network_number>_<db_nptm_schema>'.
+        `'network_<network_number>_<db_nptm_schema>'`.
     uri : str
         PostgreSQL database connection string for reading and writing data.
     main_print : bool
@@ -46,7 +73,7 @@ class Network:
 
     _type = 'network'  # Object type
 
-    def __init__(self, param: Union[dict, ParamConfig], required_fields=None):
+    def __init__(self, param: Union[dict, ParamConfig], *, required_fields: Optional[list] = None) -> None:
         """
         Initializes the Network instance with specified and validated parameters.
 
@@ -56,22 +83,24 @@ class Network:
             A dictionary of configuration parameters or an already validated ParamConfig object.
 
             Required keys (for the default configuration):
-            - "network_number" : int
+                
+            - `"network_number"` : int  
                 Identification number for the network instance.
-            - "db_nptm_schema" : str
+            - `"db_nptm_schema"` : str  
                 Name of the schema containing the National Passenger Traffic Model (NPTM) data.
-            - "uri" : str
+            - `"uri"` : str  
                 PostgreSQL database connection string.
 
             Optional keys:
-            - "main_print" : bool
+                
+            - `"main_print"` : bool  
                 Enables console output for execution status. Default is False.
-            - "sql_echo" : bool
+            - `"sql_echo"` : bool  
                 Enables SQL query logging. Default is False.
 
         required_fields : list, optional
             A custom list of fields required for this specific instance. If not provided,
-            defaults to ["network_number", "db_nptm_schema", "uri"].
+            defaults to `["network_number", "db_nptm_schema", "uri"]`.
 
         Raises
         ------
@@ -126,12 +155,12 @@ class Network:
         self.table = None
 
 
-    def _log(self, message: str):
+    def _log(self, message: str) -> None:
         if self.main_print:
             print(message)
 
 
-    def to_sql(self, if_exists='fail') -> None:
+    def to_sql(self, *, if_exists: str = 'fail') -> None:
         """
         Writes the network table to the database.
         Ensures that the associated Links and Stations tables are written if not already present.
@@ -139,16 +168,16 @@ class Network:
         Parameters
         ----------
         if_exists : str, optional
-            Determines behavior if the table already exists (default is 'fail').
-            Options:
-                - 'fail' : Raises an error if the table exists.
-                - 'replace' : Drops and recreates the table.
-                - 'append' : Adds data to the existing table (not allowed here).
+            Determines behavior if the table already exists (default is `'fail'`).  
+            Options:  
+                - `'fail'` : Raises an error if the table exists.  
+                - `'replace'` : Drops and recreates the table.  
+                - `'append'` : Adds data to the existing table (not allowed here).  
 
         Raises
         ------
         ValueError
-            If 'if_exists' is set to 'append', as it is not allowed to avoid data duplication.
+            If `'if_exists'` is set to `'append'`, as it is not allowed to avoid data duplication.
 
         Returns
         -------
@@ -156,7 +185,13 @@ class Network:
         """
         from sqlalchemy import create_engine
         from sqlalchemy.dialects.postgresql import DOUBLE_PRECISION, INTEGER, SMALLINT, VARCHAR
-        from transnetmap.utils.sql import define_schema, schema_exists, execute_sql_script, execute_primary_key_script, table_exists
+        from transnetmap.utils.sql import (
+            define_schema,
+            schema_exists,
+            execute_sql_script,
+            execute_primary_key_script,
+            table_exists
+        )
         
         # Prohibit "append" to avoid data duplication issues
         if if_exists == 'append':
@@ -230,14 +265,14 @@ class Network:
         self._log(f"Writing to the database is successful. Table: '{schema}.{table_name}'")
 
 
-    def read_sql(self) -> "Network":
+    def read_sql(self) -> Network:
         """
         Reads the network table from the database and loads it into the instance.
     
         Returns
         -------
         Network
-            The current instance with the table loaded into the 'self.table' attribute as a GeoDataFrame.
+            The current instance with the table loaded into the `self.table` attribute as a GeoDataFrame.
         
         Raises
         ------
@@ -284,10 +319,10 @@ class Network:
         return self
 
 
-    def create_network(self, stations: Stations, links: Links) -> "Network":
+    def create_network(self, stations: Stations, links: Links) -> Network:
         """
         Creates a network by combining stations and links data to generate line geometries
-        (as 'shapely.geometry.LineString') and additional attributes such as length
+        (as `shapely.geometry.LineString`) and additional attributes such as length
         (as-the-crow-flies distance) and endpoint identifiers (coordinates and codes).
     
         Parameters
@@ -306,7 +341,7 @@ class Network:
         import geopandas as gpd
         from shapely.geometry import LineString
         from pyproj import Geod
-        from transnetmap.utils.dct import dct_level
+        from transnetmap.utils.constant import DCT_LEVEL
     
         # Validate input types
         if not isinstance(stations, Stations):
@@ -354,7 +389,7 @@ class Network:
                 stations.table[["code", "lng", "lat"]],
                 how="inner", left_on="b", right_on="code"
             ).rename(columns={"lng": "lng_b", "lat": "lat_b"}).drop(columns="code")
-            links_level["level"] = dct_level[level]
+            links_level["level"] = DCT_LEVEL[level]
             return links_level
     
         # Create a geodetic calculator based on WGS84
@@ -366,11 +401,21 @@ class Network:
     
         # Create lines for all levels
         lower_line = create_line("lower")
-        self._log("Lower lines have been created.")
+        self._log(f"{lower_line.shape[0]} lower lines have been created.")
+        if lower_line.shape[0] == 0:
+            self._log("-> The lower level is ignored.")
+        
         main_line = create_line("main")
-        self._log("Main lines have been created.")
+        self._log(f"{main_line.shape[0]} main lines have been created.")
+        if main_line.shape[0] == 0:
+            self._log("-> The main level is ignored.")
+        
         higher_line = create_line("higher")
-        self._log("Higher lines have been created.\nStart creating line geometries.")
+        self._log(f"{higher_line.shape[0]} higher lines have been created.")
+        if higher_line.shape[0] == 0:
+            self._log("-> The higher level is ignored.")
+        
+        self._log("\nStart creating line geometries.")
     
         # Combine lines and create geometries
         all_lines = pd.concat([lower_line, main_line, higher_line], ignore_index=True)
@@ -429,7 +474,7 @@ class Network:
         return self
 
 
-    def _add_stations(self) -> "Network":
+    def _add_stations(self) -> Network:
         """
         Private method to add the Stations attribute to the Network object.
         This method is intended to be used internally by the class to support
@@ -456,13 +501,14 @@ class Network:
 
     def show(
         self,
-        return_layers=False,
-        file_name="network_map",
-        save_to_desktop=False,
-        custom_path=None,
-        location=None,
-        zoom_start=None
-    ):
+        *,
+        return_layers: bool = False,
+        file_name: str = "network_map",
+        save_to_desktop: bool = False,
+        custom_path: Optional[str] = None,
+        location: Optional[Tuple[float, float]] = None,
+        zoom_start: Optional[int] = None,
+    ) -> Optional[Dict[str, FeatureGroup] | folium.Map]:
         """
         Displays a map of the network using Folium, showing different link levels with associated circles around stations.
         Optionally, returns the Folium FeatureGroups instead of displaying the map.
@@ -485,9 +531,10 @@ class Network:
     
         Returns
         -------
-        dict or None
-            If `return_layers` is True, returns a dictionary with Folium FeatureGroups for each link level and the station circles.
-            Otherwise, the map is displayed and saved.
+        dict[str, folium.FeatureGroup] or None
+            If `return_layers` is True, returns a dictionary with Folium FeatureGroups for each link level and the station circles.  
+            Otherwise, displays/saves the map and returns None.  
+            *The `folium.Map` object is returned only for internal use.*
         
         Raises
         ------
@@ -497,20 +544,20 @@ class Network:
             If the dataset is empty or has no valid geometry column for mapping.
         """
         from folium import FeatureGroup, PolyLine, Circle, LayerControl
-        from transnetmap.utils.map_utils import show_map, auto_fit_map
-        from transnetmap.utils.dct import stations_areas_radius
+        from transnetmap.utils.map import show_map, auto_fit_map
+        from transnetmap.utils.constant import STATIONS_AREAS_RADIUS
     
-        # 🔹 Step 1: Validate input data
+        # Step 1: Validate input data
         if self.table is None:
-            raise AttributeError("❌ The network table is not loaded. Use 'create_network()' or 'read_sql()' first.")
+            raise AttributeError("The network table is not loaded. Use 'create_network()' or 'read_sql()' first.")
     
         if self.table.empty:
-            raise ValueError("⚠️ The network dataset is empty. Ensure the data is correctly loaded.")
+            raise ValueError("The network dataset is empty. Ensure the data is correctly loaded.")
     
         if "level" not in self.table.columns or "geom" not in self.table.columns:
-            raise ValueError("⚠️ The dataset must contain 'level' and 'geom' columns for visualization.")
+            raise ValueError("The dataset must contain 'level' and 'geom' columns for visualization.")
     
-        # 🔹 Step 2: Create FeatureGroups for link levels and station areas
+        # Step 2: Create FeatureGroups for link levels and station areas
         feature_groups = {}
         fg_stations = FeatureGroup(name="Stations areas", show=False, control=True)  # Hidden by default
     
@@ -521,7 +568,7 @@ class Network:
             """
             fg_links = FeatureGroup(name=f"NTS level {level}", show=True, control=True)
             visited_locations = set()  # Track visited locations to avoid duplicate circles
-            radius = stations_areas_radius[level]
+            radius = STATIONS_AREAS_RADIUS[level]
     
             for _, row in data.iterrows():
                 # Polyline for each link
@@ -550,7 +597,7 @@ class Network:
     
             return fg_circles, fg_links
     
-        # 🔹 Step 3: Process each link level
+        # Step 3: Process each link level
         for level in [1, 2, 3]:
             data = self.table[self.table["level"] == level]
             if not data.empty:
@@ -558,34 +605,35 @@ class Network:
     
         feature_groups["stations_areas"] = fg_stations
     
-        # 🔹 Step 4: Return layers if requested
+        # Step 4: Return layers if requested
         if return_layers:
             return feature_groups
     
-        # 🔹 Step 5: Create the map
+        # Step 5: Create the map
         m = auto_fit_map(self.table, location=location, zoom_start=zoom_start)
     
-        # 🔹 Step 6: Add all layers to the map
+        # Step 6: Add all layers to the map
         for layer in feature_groups.values():
             layer.add_to(m)
     
-        # 🔹 Step 7: Add layer control
+        # Step 7: Add layer control
         LayerControl().add_to(m)
     
-        # 🔹 Step 8: Save and display the map
+        # Step 8: Save and display the map
         show_map(m, file_name=file_name, save_to_desktop=save_to_desktop, custom_path=custom_path)
     
-        return None  # ✅ The map is displayed, no need to return anything
+        return m  # The map is displayed for internal use only.
 
 
     def show_side_by_side(
         self,
-        file_name="side_by_side_map",
-        save_to_desktop=False,
-        custom_path=None,
-        location=None,
-        zoom_start=None
-    ):
+        *,
+        file_name: str = "side_by_side_map",
+        save_to_desktop: bool = False,
+        custom_path: Optional[str] = None,
+        location: Optional[Tuple[float, float]] = None,
+        zoom_start: Optional[int] = None
+    ) -> Optional[Figure]:
         """
         Displays the network and station maps side by side using Folium and Branca.
         
@@ -611,66 +659,68 @@ class Network:
         Returns
         -------
         None
-            The method saves the map to an HTML file and opens it in a browser.
+            The method saves the map to an HTML file and opens it in a browser.  
+            *The `branca.element.Figure` object is returned only for internal use.*
         """
         import branca
         from folium import LayerControl
-        from transnetmap.utils.map_utils import show_map, auto_fit_map
+        from transnetmap.utils.map import show_map, auto_fit_map
         from transnetmap.utils.sql import table_exists
 
-        # 🔹 Step 1: Ensure Network table exists in DB or is loaded
+        # Step 1: Ensure Network table exists in DB or is loaded
         if not table_exists(self.uri, self.table_name, print_status=self.main_print):
-            self._log("⚠️ Network table does not exist in DB. Checking local attribute...")
+            self._log("Network table does not exist in DB. Checking local attribute...")
         else:
             self.read_sql()
 
         if self.table is None:
-            raise AttributeError("❌ The network table is missing. Use `create_network()` or `read_sql()` first.")
+            raise AttributeError("The network table is missing. Use `create_network()` or `read_sql()` first.")
 
-        # 🔹 Step 2: Ensure Stations data is available
+        # Step 2: Ensure Stations data is available
         self._add_stations()
 
         if self.stations.table is None:
-            raise AttributeError("❌ The stations table is missing. Use `read_sql()` or `read_csv()` first.")
+            raise AttributeError("The stations table is missing. Use `read_sql()` or `read_csv()` first.")
 
-        # 🔹 Step 3: Create base maps (auto-fit bounds if no manual `location`)
+        # Step 3: Create base maps (auto-fit bounds if no manual `location`)
         network_map = auto_fit_map(self.table, location=location, zoom_start=zoom_start)
         station_map = auto_fit_map(self.table, location=location, zoom_start=zoom_start)
 
-        # 🔹 Step 4: Add stations layer to station map
+        # Step 4: Add stations layer to station map
         self.stations.show(return_layers=True).add_to(station_map)
 
-        # 🔹 Step 5: Add all network layers to network map
+        # Step 5: Add all network layers to network map
         for layer in self.show(return_layers=True).values():
             layer.add_to(network_map)
             
-        # 🔹 Step 6: Add layer control to network map
+        # Step 6: Add layer control to network map
         LayerControl().add_to(network_map)
 
-        # 🔹 Step 7: Create a Branca figure for side-by-side maps
+        # Step 7: Create a Branca figure for side-by-side maps
         fig = branca.element.Figure()
         subplot1 = fig.add_subplot(1, 2, 1)  # Left: Stations
         subplot2 = fig.add_subplot(1, 2, 2)  # Right: Network
         subplot1.add_child(station_map)
         subplot2.add_child(network_map)
 
-        # # 🔹 Step 7: Add layer control to network map
+        # # Step 7: Add layer control to network map
         # LayerControl().add_to(network_map)
 
-        # 🔹 Step 8: Save and display the combined figure
+        # Step 8: Save and display the combined figure
         show_map(fig, file_name=file_name, save_to_desktop=save_to_desktop, custom_path=custom_path)
 
-        return None  # ✅ No return needed, map is displayed
+        return fig  # The branca figure is displayed for internal use only.
 
 
     def show_all(
         self,
-        file_name="network_all_map",
-        save_to_desktop=False,
-        custom_path=None,
-        location=None,
-        zoom_start=None
-    ):
+        *,
+        file_name: str = "network_all_map",
+        save_to_desktop: bool = False,
+        custom_path: Optional[str] = None,
+        location: Optional[Tuple[float, float]] = None,
+        zoom_start: Optional[int] = None
+    ) -> Optional[folium.Map]:
         """
         Displays a comprehensive map of the network, including zones from the NPTM,
         stations, and network links.
@@ -699,41 +749,42 @@ class Network:
         Returns
         -------
         None
-            The method saves the map to an HTML file and opens it in a browser.
+            The method saves the map to an HTML file and opens it in a browser.  
+            *The `folium.Map` object is returned only for internal use.*
         """
         from folium import GeoJson, GeoJsonPopup, LayerControl
-        from transnetmap.utils.map_utils import show_map, auto_fit_map
+        from transnetmap.utils.map import show_map, auto_fit_map
         from transnetmap.pre.nptm import NPTM
         from transnetmap.utils.sql import table_exists
 
-        # 🔹 Step 1: Ensure Network table exists in DB or is loaded
+        # Step 1: Ensure Network table exists in DB or is loaded
         if not table_exists(self.uri, self.table_name, print_status=self.main_print):
-            self._log("⚠️ Network table does not exist in DB. Checking local attribute...")
+            self._log("Network table does not exist in DB. Checking local attribute...")
         else:
             self.read_sql()
 
         if self.table is None:
-            raise AttributeError("❌ The network table is missing. Use `create_network()` or `read_sql()` first.")
+            raise AttributeError("The network table is missing. Use `create_network()` or `read_sql()` first.")
 
-        # 🔹 Step 2: Ensure Stations data is available
+        # Step 2: Ensure Stations data is available
         self._add_stations()
 
         if self.stations.table is None:
-            raise AttributeError("❌ The stations table is missing. Use `read_sql()` or `read_csv()` first.")
+            raise AttributeError("The stations table is missing. Use `read_sql()` or `read_csv()` first.")
 
-        # 🔹 Step 3: Load zones data from DB
-        required_fields = ["db_zones_table"]
-        zones = NPTM(self.config, required_fields).read_sql(self.config.db_zones_table, columns=["id", "geom"])
+        # Step 3: Load zones data from DB
+        zones = NPTM(self.config, required_fields=["db_zones_table"]
+                     ).read_sql(self.config.db_zones_table, columns=["id", "geom"])
 
         if zones is None or zones.empty:
-            raise ValueError("⚠️ The NPTM zones data is missing or invalid. Cannot generate the map.")
+            raise ValueError("The NPTM zones data is missing or invalid. Cannot generate the map.")
 
-        # 🔹 Step 4: Define styling functions for zones
+        # Step 4: Define styling functions for zones
         def style_function(feature):
             return {
                 'fillColor': feature["properties"].get("color", "#cdcdcd"),  # Default or custom fill color
-                'color': '#a8a8a8',  # Border color
-                'weight': 1,         # Border thickness
+                'color': '#292828',  # Border color
+                'weight': 1.3,         # Border thickness
                 'fillOpacity': 0.0   # Fill opacity
             }
         
@@ -745,24 +796,26 @@ class Network:
                 'fillOpacity': 0.25      # Highlight fill opacity
             }
         
-        # 🔹 Step 5: Retrieve network and stations layers
+        # Step 5: Retrieve network and stations layers
         network_layers = self.show(return_layers=True)
         stations_layer = self.stations.show(return_layers=True)
         
-        # 🔹 Step 6: Create the GeoJson layer for zones
+        # Step 6: Create the GeoJson layer for zones
         zones_layer = GeoJson(
             zones,
             name="Zones",
             style_function=style_function,
             highlight_function=highlight_function,
-            popup=GeoJsonPopup(fields=['id'], aliases=['Zone id:'], labels=True),
+            popup=GeoJsonPopup(fields=['id'], aliases=['Zone id:'], labels=True,
+                style="font-size: 14px",
+            ),
             popup_keep_highlighted=True
         )
         
-        # 🔹 Step 7: Create the base map (auto-fit bounds if no manual location)
+        # Step 7: Create the base map (auto-fit bounds if no manual location)
         m = auto_fit_map(zones, location=location, zoom_start=zoom_start)
         
-        # 🔹 Step 8: Add layers to the map
+        # Step 8: Add layers to the map
         stations_layer.add_to(m)  # Add stations
         
         for layer in network_layers.values():  # Add network layers
@@ -770,16 +823,18 @@ class Network:
         
         zones_layer.add_to(m)  # Add zones
         
-        # 🔹 Step 9: Add layer control
+        # Step 9: Add layer control
         LayerControl().add_to(m)
 
-        # 🔹 Step 10: Save and display the map
+        # Step 10: Save and display the map
         show_map(m, file_name=file_name, save_to_desktop=save_to_desktop, custom_path=custom_path)
 
-        return None  # ✅ The map is displayed, no need to return anything
+        return m  # The map is displayed for internal use only.
 
 
-# ===========================
+# -----------------------------------------------------------------------------
+# Main (example-only)
+# -----------------------------------------------------------------------------
 if __name__ == "__main__":
     
     # Complete dictionary of creation and calculation parameters
@@ -808,5 +863,3 @@ if __name__ == "__main__":
     network_2.show_side_by_side()
     network_2.show_all()
     network_2_fg = network_2.show(return_layers=True)
-    
-    

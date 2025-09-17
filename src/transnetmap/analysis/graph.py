@@ -1,20 +1,48 @@
 # -*- coding: utf-8 -*-
+"""
+Graph-based optimisation using Dijkstra over the edge list.
 
-from transnetmap.analysis.edgelist import EdgeList  # Import the EdgeList class
+This module defines the class `Graph`, a thin wrapper on top of class `transnetmap.analysis.edgelist.EdgeList`
+that builds a directed graph (NetworkX DiGraph) from the edgelist and runs Dijkstra to produce
+an optimisation table.
+"""
+
+from __future__ import annotations
+
+from typing import Optional, Union, Any, TYPE_CHECKING
+import time
+import threading
+
 import pandas as pd
 import polars as pl
 import networkx as nx
-import threading
-import time
+
+from transnetmap.analysis.edgelist import EdgeList
 from transnetmap.utils.utils import spinner, convert_to_pg_array
 
+if TYPE_CHECKING:  # noqa: F401
+    from transnetmap.utils.config import ParamConfig
+
+__all__ = ["Graph"]
+
+
+# -----------------------------------------------------------------------------
+# Class: Graph
+# -----------------------------------------------------------------------------
 class Graph(EdgeList):
     """
     Graph class for network optimization using the Dijkstra algorithm.
+    
+    This class `Graph` is a thin wrapper on top of class `transnetmap.analysis.edgelist.EdgeList`
+    that builds a directed graph (NetworkX DiGraph) from the edgelist and runs Dijkstra to produce
+    an optimisation table.
+    
     Inherits parameters and methods from EdgeList.
 
     Attributes
     ----------
+    config : ParamConfig
+        Dataclass with validated configuration parameters.
     graph : networkx.DiGraph
         Directed graph built from the edge list (DiGraph format).
     optimisation : polars.DataFrame or None
@@ -28,7 +56,7 @@ class Graph(EdgeList):
     Methods
     -------
     _create_graph(edgelist=None):
-        Creates a directed graph (DiGraph) from the 'edgelist' attribute or a custom subset.
+        Creates a directed graph (DiGraph) from the `edgelist` attribute or a custom subset.
     process_dijkstra(to_sql_optimisation=True):
         Runs Dijkstra's algorithm between all nodes to calculate shortest paths
         and formats the results.
@@ -45,7 +73,7 @@ class Graph(EdgeList):
       for all optimization calculations.
     """
 
-    def __init__(self, param):
+    def __init__(self, param: Union[dict, ParamConfig]) -> None:
         """
         Initializes the Graph class by inheriting EdgeList parameters and attributes.
 
@@ -53,17 +81,9 @@ class Graph(EdgeList):
         ----------
         param : dict or ParamConfig
             Configuration parameters for EdgeList and Graph.
-
-        Attributes initialized
-        -----------------------
-        graph : networkx.DiGraph
-            Placeholder for the directed graph.
-        optimisation : polars.DataFrame or None
-            Placeholder for the optimization results table.
-        table_name_optimisation : str
-            Fixed table name for storing optimization results.
-        main_print_graph : bool
-            Determines if status messages specific to Graph methods are printed.
+            
+            Default required fields from `edgelist.EdgeList`:  
+                `["network_number", "physical_values_set_number", "network_extension_type", "db_nptm_schema", "uri"]`
         """
         super().__init__(param)  # Inherit from EdgeList
         self.graph = None  # Placeholder for the NetworkX graph
@@ -74,16 +94,27 @@ class Graph(EdgeList):
         
         # Adjust parameters based on execution context
         self.main_print_graph = self.config.main_print or (__name__ == "__main__")
+        
+
+    def __getattr__(self, name: str) -> Any:
+        if name == "table":
+            # Graph exposes 'optimisation' (results) and still has 'edgelist' from the parent.
+            raise AttributeError(
+                "Graph has no attribute 'table'.\n"
+                "• Use 'optimisation' to access the computed results table.\n"
+                "• Use 'edgelist' to access the edge list table."
+            )
+        raise AttributeError(f"{type(self).__name__} object has no attribute {name!r}")
 
 
-    def _log(self, message: str):
+    def _log(self, message: str) -> None:
         if self.main_print:
             print(message)
 
 
-    def _create_graph(self, edgelist=None):
+    def _create_graph(self, edgelist: Optional[pl.DataFrame] = None) -> None:
         """
-        Creates a directed graph (DiGraph) from the 'edgelist' attribute or a custom subset for debugging purposes.
+        Creates a directed graph (DiGraph) from the `edgelist` attribute or a custom subset for debugging purposes.
     
         This method constructs a NetworkX DiGraph instance using the edge list data. It supports passing
         a custom `edgelist` parameter to facilitate testing or debugging on a smaller subset of edges.
@@ -156,7 +187,8 @@ class Graph(EdgeList):
         if edgelist is not None:
             # Warn the user about using a custom edge list
             print("\n"
-                  "Warning: You are using a custom edge list. This is intended for testing or debugging only.")
+                  "Warning: You are using a custom edge list. This is intended for testing or debugging only."
+            )
             if not isinstance(edgelist, pl.DataFrame):
                 raise TypeError("The custom 'edgelist' must be a Polars DataFrame.")
             # Use the provided custom edge list
@@ -193,7 +225,7 @@ class Graph(EdgeList):
                   f"and {self.graph.number_of_edges()} edges.")
 
 
-    def process_dijkstra(self, to_sql_optimisation=True) -> "Graph":
+    def process_dijkstra(self, *, to_sql_optimisation: bool = True) -> Graph:
         """
         Runs Dijkstra's algorithm between all nodes to calculate shortest paths.
         If the table does not exist in the database, it is created.
@@ -208,9 +240,12 @@ class Graph(EdgeList):
         -------
         self : Graph
             The updated Graph instance with the following attributes:
+                
             - `self.optimisation` (polars.DataFrame): A Polars DataFrame containing the optimisation results.
               Sorted by 'from', 'to', and the optimisation metric ('time').
+              
               Columns:
+                  
                 - 'from', 'to': int16 (node identifiers)
                 - 'type': int8 (type identifier)
                 - 'time': float32 (travel time in minutes)
@@ -231,7 +266,7 @@ class Graph(EdgeList):
         """
         from transnetmap.pre.nptm import NPTM
         from transnetmap.utils.sql import schema_exists
-        from transnetmap.utils.dct import dct_type
+        from transnetmap.utils.constant import DCT_TYPE
         from transnetmap.utils.utils import to_engineering_notation
     
         # Step 1: Verify graph existence and schema
@@ -330,7 +365,7 @@ class Graph(EdgeList):
             .filter(pl.col(Graph.OPTIMISATION_METRIC) < pl.col(f"{Graph.OPTIMISATION_METRIC}_nptm"))
             .with_columns([
                 (pl.col('path').list.len() - 1).alias('nb_edges').cast(pl.Int8),  # Calculating number of edges
-                pl.lit(dct_type['with-NTS']).alias('type').cast(pl.Int8)  # Add the 'type' column
+                pl.lit(DCT_TYPE['with-NTS']).alias('type').cast(pl.Int8)  # Add the 'type' column
             ])
             .select(
                 pl.col('from'),
@@ -374,26 +409,26 @@ class Graph(EdgeList):
         return self
 
 
-    def to_sql_optimisation(self, if_exists='fail') -> None:
+    def to_sql_optimisation(self, *, if_exists: str = 'fail') -> None:
         """
         Saves the Dijkstra results to the database.
     
         Parameters
         ----------
         if_exists : str, optional
-            Determines behavior if the tables already exist in the database (default is 'fail').
-            Options:
-                - 'fail' : Raises an error if the table exists.
-                - 'replace' : Drops and recreates the table.
+            Determines behavior if the tables already exist in the database (default is `'fail'`).  
+            Options:  
+                - `'fail'` : Raises an error if the table exists.  
+                - `'replace'` : Drops and recreates the table.  
     
         Raises
         ------
         ValueError
-            If `if_exists` is set to an invalid value (must be 'fail' or 'replace').
+            If `if_exists` is set to an invalid value (must be `'fail'` or `'replace'`).
         RuntimeError
-            If the required schema does not exist.
-            Schema must be created using: `to_sql_edgelist()`.
-            If an error occurs while writing data to the database.
+            If the required schema does not exist. 
+            Schema must be created using: `to_sql_edgelist()`.  
+            If an error occurs while writing data to the database.  
     
         Returns
         -------
@@ -411,25 +446,25 @@ class Graph(EdgeList):
         from transnetmap.utils.sql import schema_exists, execute_sql_script, execute_primary_key_script
         import time
     
-        # 🔹 Step 1: Validate parameters
+        #  Step 1: Validate parameters
         if if_exists not in ['fail', 'replace']:
             raise ValueError(f"Invalid value for `if_exists`: {if_exists}. Use 'fail' or 'replace'.")
     
         schema = self.db_results_schema
         table_name = self.table_name_optimisation
     
-        # 🔹 Step 2: Ensure schema exists
+        #  Step 2: Ensure schema exists
         if not schema_exists(self.uri, schema, print_status=self.config.main_print):
-            raise RuntimeError("❌ Schema does not exist.\n"
+            raise RuntimeError("Schema does not exist.\n"
                                "Run 'to_sql_edgelist()' first.")
     
-        print("📥 Writing the optimisation results to the database begins.")
+        print("Writing the optimisation results to the database begins.")
         
-        # 🔹 Step 3: Validate the table before writing
+        #  Step 3: Validate the table before writing
         if self.optimisation.is_empty():
-            raise RuntimeError(f"❌ Attempted to write an empty optimisation table: {table_name}")
+            raise RuntimeError(f"Attempted to write an empty optimisation table: {table_name}")
         
-        # 🔹 Step 4: Apply column types dynamically
+        #  Step 4: Apply column types dynamically
         column_types = {
             'from': pl.Int16,
             'to': pl.Int16,
@@ -443,15 +478,15 @@ class Graph(EdgeList):
             [pl.col(col).cast(dtype) for col, dtype in column_types.items()]
         )
     
-        # 🔹 Step 5: Convert paths to PostgreSQL format
+        #  Step 5: Convert paths to PostgreSQL format
         path = self.optimisation['path'].to_pandas().apply(lambda x: convert_to_pg_array(x))
         path = pl.from_pandas(path)
         self.optimisation = self.optimisation.replace_column(-1, pl.Series('path', path)).sort(['from', 'to'])
     
-        # 🔹 Step 6: Measure time for database write
+        #  Step 6: Measure time for database write
         start_time = time.time()
     
-        # 🔹 Step 7: Write table using ADBC engine
+        #  Step 7: Write table using ADBC engine
         try:
             self.optimisation.write_database(
                 table_name=f"{schema}.{table_name}",
@@ -460,9 +495,9 @@ class Graph(EdgeList):
                 if_table_exists=if_exists
             )
         except Exception as e:
-            raise RuntimeError(f"❌ Error while writing to the database: {e}")
+            raise RuntimeError(f"Error while writing to the database: {e}")
     
-        # 🔹 Step 8: Adjust column type for PostgreSQL array
+        #  Step 8: Adjust column type for PostgreSQL array
         script = f"""
         ALTER TABLE "{schema}"."{table_name}"
         ALTER COLUMN path TYPE SMALLINT[]
@@ -471,9 +506,9 @@ class Graph(EdgeList):
         try:
             execute_sql_script(self.uri, script, print_status=self.config.main_print)
         except Exception as e:
-            raise RuntimeError(f"❌ Error while executing SQL script for table '{table_name}': {e}")
+            raise RuntimeError(f"Error while executing SQL script for table '{table_name}': {e}")
     
-        # 🔹 Step 9: Add primary key to table
+        #  Step 9: Add primary key to table
         execute_primary_key_script(
             uri=self.uri,
             table=table_name,
@@ -483,18 +518,23 @@ class Graph(EdgeList):
             print_status=self.config.main_print
         )
     
-        # 🔹 Step 10: Log success message
+        #  Step 10: Log success message
         elapsed_time = round(time.time() - start_time)
         num_rows = self.optimisation.shape[0]
-        print(f"✅ Writing to the database is successful.\n"
-              f"🔹 Table: '{table_name}'\n"
-              f"🔹 Number of rows inserted: {num_rows}\n"
-              f"🔹 Time taken: {elapsed_time} seconds.\n")
+        print(f"Writing to the database is successful.\n"
+              f"Table: '{table_name}'\n"
+              f"Number of rows inserted: {num_rows}\n"
+              f"Time taken: {elapsed_time} seconds.\n")
     
         return None
 
 
-    def read_sql_optimisation(self, columns=None, where_condition=None) -> pl.DataFrame:
+    def read_sql_optimisation(
+        self,
+        *,
+        columns: Optional[list[str]] = None,
+        where_condition: Optional[str] = None,
+    ) -> pl.DataFrame:
         """
         Imports optimisation results from the database, with optional column selection and where condition.
     
@@ -512,15 +552,15 @@ class Graph(EdgeList):
         polars.DataFrame
             DataFrame containing the optimisation results.
                         
-            - If called on an instance (`graph.read_sql_optimisation()`), the results are stored in `self.table`.
+            - If called on an instance (``graph.read_sql_optimisation()``), the results are stored in ``self.optimisation``.
             - If called without assignment (`Graph(config).read_sql_optimisation()`), only the DataFrame is returned, 
               and the instance is not stored.
     
         Raises
         ------
         RuntimeError
-            If the specified table does not exist in the database.
-            If the query returns an empty dataset.
+            If the specified table does not exist in the database.  
+            If the query returns an empty dataset.  
     
         Notes
         -----
@@ -530,20 +570,20 @@ class Graph(EdgeList):
         """       
         from transnetmap.utils.sql import table_exists, validate_columns, columns_exist
     
-        # 🔹 Step 1: Define the schema and table
+        #  Step 1: Define the schema and table
         schema = self.db_results_schema
         table_name = self.table_name_optimisation
     
-        # 🔹 Step 2: Check if the table exists
-        self._log(f'🔍 Checking if the "{table_name}" table exists in the database.')
+        #  Step 2: Check if the table exists
+        self._log(f'Checking if the "{table_name}" table exists in the database.')
     
         if not table_exists(self.uri, table_name, print_status=self.main_print):
             raise RuntimeError(
-                f'❌ Table "{table_name}" does not exist in the database.\n'
+                f'Table "{table_name}" does not exist in the database.\n'
                 f'Ensure it is defined and written to the database (schema: "{schema}").'
             )
     
-        # 🔹 Step 3: Validate requested columns
+        #  Step 3: Validate requested columns
         column_types = {
             'from': pl.Int16,
             'to': pl.Int16,
@@ -554,53 +594,59 @@ class Graph(EdgeList):
         }
         
         if columns:
-            columns_part = validate_columns(self.uri, columns, table_name, schema, print_status=self.main_print)
-            self._log("✅ All required columns exist. Proceeding with the query.")
+            columns_part = validate_columns(
+                self.uri, columns, table_name, schema, print_status=self.main_print
+            )
+            self._log("All required columns exist. Proceeding with the query.")
         else:
             # Default to all available columns
-            columns = columns_exist(self.uri, list(column_types.keys()), table_name, schema, print_status=self.main_print)
+            columns = columns_exist(
+                self.uri, list(column_types.keys()), table_name, schema, print_status=self.main_print
+            )
             columns = [col for col in columns if columns[col]]
             columns_part = ", ".join(f'"{col}"' for col in columns)
     
-        # 🔹 Step 4: Build the SQL query
+        #  Step 4: Build the SQL query
         sql_query = f'SELECT {columns_part} FROM "{schema}"."{table_name}"'
         if where_condition:
             sql_query += f'\n{where_condition}'
     
-        self._log(f"📄 Executing SQL query:\n{sql_query}\n")
+        self._log(f"Executing SQL query:\n{sql_query}\n")
     
-        # 🔹 Step 5: Execute the SQL query and load data into a Polars DataFrame
+        #  Step 5: Execute the SQL query and load data into a Polars DataFrame
         try:
             table = pl.read_database_uri(sql_query, self.uri, engine='adbc')
         except Exception as e:
-            raise RuntimeError(f"❌ Error reading data from database: {e}\nQuery: {sql_query}")
+            raise RuntimeError(f" Error reading data from database: {e}\nQuery: {sql_query}")
     
-        # 🔹 Step 6: Check if the table is empty
+        #  Step 6: Check if the table is empty
         if table.is_empty():
-            raise RuntimeError(f"❌ Query returned an empty dataset for table: {table_name}")
+            raise RuntimeError(f" Query returned an empty dataset for table: {table_name}")
     
-        # 🔹 Step 7: Dynamically cast columns based on selection
+        #  Step 7: Dynamically cast columns based on selection
         selected_types = {col: column_types[col] for col in columns}
         table = table.with_columns(
             [pl.col(col).cast(dtype) for col, dtype in selected_types.items()]
         )
     
-        # 🔹 Step 8: Log query results
+        #  Step 8: Log query results
         num_rows, num_cols = table.shape
         if self.main_print:
             selected_cols = ", ".join(columns)
-            print(f"✅ Query executed successfully.\n"
-                  f"🔹 Selected columns: {selected_cols}\n"
-                  f"🔹 Rows loaded: {num_rows}\n"
-                  f"🔹 Columns retrieved: {num_cols}\n")
+            print(f"Query executed successfully.\n"
+                  f"Selected columns: {selected_cols}\n"
+                  f"Rows loaded: {num_rows}\n"
+                  f"Columns retrieved: {num_cols}\n")
     
-        # 🔹 Step 9: Store the table in `self.optimisation`
+        #  Step 9: Store the table in `self.optimisation`
         self.optimisation = table
     
-        return table  # ✅ Return the DataFrame instead of modifying the instance directly
+        return table  #  Return the DataFrame instead of modifying the instance directly
 
 
-# ===========================
+# -----------------------------------------------------------------------------
+# Main (example-only)
+# -----------------------------------------------------------------------------
 if __name__ == "__main__":
         
     # Complete dictionary of creation and calculation parameters

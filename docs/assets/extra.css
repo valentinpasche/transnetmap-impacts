@@ -1,0 +1,28 @@
+/* Separator between members (functions, methods, constants) */
+.md-typeset .doc-contents .doc-object,
+.md-typeset .doc-contents details.doc-object {
+  margin-top: 1.6rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--md-default-fg-color--lightest);
+}
+
+/* Member titles slightly more visible */
+.md-typeset .doc-contents h2,
+.md-typeset .doc-contents h3 {
+  font-weight: 700;
+}
+
+/* Better spaced signature */
+.md-typeset .doc-contents .doc-signature {
+  margin-bottom: .5rem;
+}
+
+/* By default (light), we hide the dark */
+.only-dark { display: none; }
+[data-md-color-scheme="slate"] .only-light,
+[data-md-color-scheme="dark"]  .only-light { display: none; }
+
+/* When the theme is dark, Material adds data-md-color-scheme to <html>.
+The names “slate” or “dark” cover common cases. */
+[data-md-color-scheme="slate"] .only-dark,
+[data-md-color-scheme="dark"]  .only-dark  { display: inline; }

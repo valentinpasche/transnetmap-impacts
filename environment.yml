@@ -1,7 +1,8 @@
 # environment.yml (stable, non-editable)
 name: transnetmap
-channels: [conda-forge]
-channel_priority: strict
+channels:
+  - conda-forge
+  - nodefaults
 dependencies:
   - python=3.12
   - numpy
@@ -11,6 +12,7 @@ dependencies:
   - networkx
   - psycopg2
   - sqlalchemy
+  - geoalchemy2
   - adbc-driver-manager        # Polars ADBC
   - adbc-driver-postgresql     # Polars ADBC
   - geopandas
@@ -20,8 +22,8 @@ dependencies:
   - jenkspy
   - pip
   - pip:
-      # Installs the package (non-editable) from GitHub at tag v1.0.1
-      - https://github.com/valentinpasche/transnetmap-impacts/archive/refs/tags/v1.0.1.zip
+      # Installs the package (non-editable) from GitHub at tag v1.1.0
+      - https://github.com/valentinpasche/transnetmap-impacts/archive/refs/tags/v1.1.0.zip
 
 # Requires a PostgreSQL database with the PostGIS extension enabled.
 

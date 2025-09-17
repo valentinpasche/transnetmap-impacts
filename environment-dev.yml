@@ -1,8 +1,10 @@
 # environment-dev.yml (development, editable)
 name: transnetmap-dev
+
+  # "nodefaults" is similar to "-c conda-forge --override-channels" but for yml
 channels:
   - conda-forge
-channel_priority: strict
+  - nodefaults
 
 dependencies:
   # --- Python runtime ---
@@ -20,6 +22,7 @@ dependencies:
   # --- Database (PostgreSQL/PostGIS access) ---
   - psycopg2
   - sqlalchemy
+  - geoalchemy2
   # (Arrow Database Connectivity, polars engine 'adbc')
   - adbc-driver-manager
   - adbc-driver-postgresql

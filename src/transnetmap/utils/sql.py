@@ -1,15 +1,47 @@
 # -*- coding: utf-8 -*-
+"""
+SQL utilities for PostgreSQL/PostGIS interactions used by transnetmap.
 
+This module centralizes small helpers around executing SQL statements, validating the
+presence of schemas/tables/columns, and adding primary keys.
+
+Notes
+-----
+- Functions here are thin wrappers over psycopg2 and are intentionally simple.
+- SQL is passed as plain text with `%s` placeholders and parameters given as tuples/lists.
+  (No `psycopg2.sql` composition objects are used in this module.)
+"""
+
+from __future__ import annotations
+
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+
+import psycopg2
+
+__all__ = [
+    "execute_sql_script",
+    "execute_primary_key_script",
+    "define_schema",
+    "schema_exists",
+    "table_exists",
+    "columns_exist",
+    "validate_columns",
+]
+
+
+# -----------------------------------------------------------------------------
+# Core executor
+# -----------------------------------------------------------------------------
 def execute_sql_script(
-    uri: str, 
-    script: str, 
-    params=None, 
-    fetch_all=False, 
-    print_status=True, 
-    raise_on_error=True
-) -> list:
+    uri: str,
+    script: str,
+    params: Optional[Union[Sequence[Any], Tuple[Any, ...]]] = None,
+    fetch_all: bool = False,
+    print_status: bool = True,
+    raise_on_error: bool = True,
+) -> Optional[Union[Tuple[Any, ...], List[Tuple[Any, ...]]]]:
     """
-    Executes an SQL script directly in the database and returns the results if applicable.
+    Execute an SQL script directly in the database and return results if applicable.
 
     Parameters
     ----------
@@ -18,23 +50,26 @@ def execute_sql_script(
     script : str
         SQL script to execute.
     params : list or tuple, optional
-        Parameters to securely pass into the SQL script. Default is None.
+        Parameters to securely pass into the SQL script. Default is ``None``.
     fetch_all : bool, optional
-        If True, fetches all rows from the result. Default is False (fetch one row).
+        If ``True``, fetches **all** rows from the result. Default is ``False`` (fetches **one** row).
     print_status : bool, optional
-        If True, displays status messages (default is True).
+        If ``True``, displays status messages (default is ``True``).
     raise_on_error : bool, optional
-        Whether to raise an exception on error. Default is True.
+        Whether to raise an exception on error. Default is ``True``.
 
     Returns
     -------
-    list or None
-        The results of the SQL query as a list (e.g., for SELECT statements), 
-        or None if the query does not return results (e.g., for INSERT, UPDATE, DELETE).
+    tuple or list of tuple or None
+        - If the query returns rows and ``fetch_all`` is ``False`` (default), returns the **first row**
+          as a tuple (e.g., useful for ``SELECT EXISTS(...)``).
+        - If the query returns rows and ``fetch_all`` is ``True``, returns a **list of rows**.
+        - If the query does **not** return rows (e.g., ``INSERT/UPDATE/DELETE``), returns ``None``.
     
     Notes
     -----
-    - For SELECT statements or any script returning results, only the first row is returned.
+    - For SELECT statements or any script returning results, only the first row is returned
+      when ``fetch_all`` is ``False``.
     - Commits are automatically performed for write operations.
     
     Raises
@@ -42,10 +77,8 @@ def execute_sql_script(
     Exception
         Any error encountered during script execution is printed to the console.
     RuntimeError
-        If an error occurs during SQL execution and `raise_on_error` is True.
+        If an error occurs during SQL execution and ``raise_on_error`` is ``True``.
     """
-    import psycopg2
-
     conn = None
     error_occurred = False  # Tracks if an error occurred during execution
 
@@ -68,7 +101,7 @@ def execute_sql_script(
                         print(f"SQL script executed successfully with {len(result)} rows.")
                     return result
                 else:
-                    result = cur.fetchone()  # Fetch the first row of the result (useful for EXISTS or SELECT)
+                    result = cur.fetchone()  # Fetch the first row of the result
                     if print_status:
                         print("SQL script executed successfully with one result.")
                     return result
@@ -97,16 +130,19 @@ def execute_sql_script(
                 print("Database connection closed.")
 
 
+# -----------------------------------------------------------------------------
+# DDL helpers
+# -----------------------------------------------------------------------------
 def execute_primary_key_script(
-    uri: str, 
-    table: str, 
-    list_columns: list, 
-    schema: str, 
-    include_schema_in_pk_name=False, 
-    print_status=True
+    uri: str,
+    table: str,
+    list_columns: List[str],
+    schema: str,
+    include_schema_in_pk_name: bool = False,
+    print_status: bool = True,
 ) -> None:
     """
-    Adds a primary key constraint to a specified table in the PostgreSQL database,
+    Add a primary key constraint to a specified table in the PostgreSQL database,
     with optional schema-prefixed constraint name.
     
     Parameters
@@ -120,9 +156,9 @@ def execute_primary_key_script(
     schema : str
         Name of the schema containing the target table.
     include_schema_in_pk_name : bool, optional
-        If True, includes the schema name in the primary key constraint name. Default is False.
+        If ``True``, includes the schema name in the primary key constraint name. Default is ``False``.
     print_status : bool, optional
-        If True, prints status messages to the console. Default is True.
+        If ``True``, prints status messages to the console. Default is ``True``.
 
     Returns
     -------
@@ -138,23 +174,12 @@ def execute_primary_key_script(
 
     Notes
     -----
-    - The primary key constraint name defaults to `{table_name}_pkey`.
-    - If `include_schema_in_pk_name` is True, the constraint name becomes `{schema}_{table_name}_pkey`.
+    - The primary key constraint name defaults to ``{table_name}_pkey``.
+    - If ``include_schema_in_pk_name`` is ``True``, the constraint name becomes ``{schema}_{table_name}_pkey``.
     - The function validates the schema, table, and column existence before attempting to add the constraint.
     - This function uses `execute_sql_script` for executing the SQL command.
-    - The `param` argument in `execute_sql_script` is explicitly set to `None` as this method does not require dynamic parameters.
-
-    Examples
-    --------
-    Adding a primary key to the table "my_table" in the schema "my_schema":
-    >>> execute_primary_key_script(
-    ...     uri="postgresql://user:password@localhost/mydb",
-    ...     table="my_table",
-    ...     list_columns=["id", "name"],
-    ...     schema="my_schema",
-    ...     include_schema_in_pk_name=True,
-    ...     print_status=True
-    ... )
+    - The ``params`` argument in `execute_sql_script` is explicitly set to ``None`` as this method
+      does not require dynamic parameters.
     """
     # Step 1: Validate the schema
     if not schema_exists(uri, schema, print_status=print_status):
@@ -194,9 +219,14 @@ def execute_primary_key_script(
     return None
 
 
-def define_schema(uri: str, name_schema: str, text_comment=None, print_status=True) -> None:
+def define_schema(
+    uri: str,
+    name_schema: str,
+    text_comment: Optional[str] = None,
+    print_status: bool = True
+) -> None:
     """
-    Creates a schema in the PostgreSQL database and optionally adds a comment to it.
+    Create a schema in the PostgreSQL database and optionally add a comment to it.
 
     Parameters
     ----------
@@ -205,9 +235,9 @@ def define_schema(uri: str, name_schema: str, text_comment=None, print_status=Tr
     name_schema : str
         Name of the schema to create.
     text_comment : str, optional
-        A comment to add to the schema after its creation. Default is None.
+        A comment to add to the schema after its creation. Default is ``None``.
     print_status : bool, optional
-        If True, displays status messages during the execution (default is True).
+        If ``True``, displays status messages during the execution (default is ``True``).
 
     Returns
     -------
@@ -232,15 +262,15 @@ def define_schema(uri: str, name_schema: str, text_comment=None, print_status=Tr
     
     # Construct the SQL script to create the schema and optionally add a comment
     if text_comment:
-        script = f'''
+        script = f"""
         CREATE SCHEMA {name_schema};
         COMMENT ON SCHEMA {name_schema} IS %s;
-        '''
+        """
         params = (text_comment,)
     else:
-        script = f'''
+        script = f"""
         CREATE SCHEMA {name_schema};
-        '''
+        """
         params = None
     
     # Execute the SQL script using the provided utility function
@@ -249,24 +279,26 @@ def define_schema(uri: str, name_schema: str, text_comment=None, print_status=Tr
     return None
 
 
-def schema_exists(uri: str, schema: str, print_status=True) -> bool:
+# -----------------------------------------------------------------------------
+# Existence checks
+# -----------------------------------------------------------------------------
+def schema_exists(uri: str, schema: str, print_status: bool = True) -> bool:
     """
-    Checks if a schema exists in the PostgreSQL database.
+    Check if a schema exists in the PostgreSQL database.
 
     Parameters
     ----------
     uri : str
         PostgreSQL DB connection string.
     schema : str
-        Name of the schema to check for existence.
-        Ensure the schema name is properly quoted in the SQL query.
+        Name of the schema to check for existence (quoted correctly in the query).
     print_status : bool, optional
-        If True, displays status messages during the execution (default is True).
+        If ``True``, displays status messages during the execution (default is ``True``).
 
     Returns
     -------
     bool
-        True if the schema exists, False otherwise.
+        ``True`` if the schema exists, ``False`` otherwise.
 
     Notes
     -----
@@ -274,42 +306,41 @@ def schema_exists(uri: str, schema: str, print_status=True) -> bool:
     - This function is safe to use even if the schema does not exist.
     """
     # SQL script to check schema existence
-    script = '''
+    script = """
         SELECT EXISTS (
             SELECT 1
             FROM information_schema.schemata
             WHERE schema_name = %s
         ) AS schema_existence;
-    '''
+    """
     
     # Execute the SQL script and retrieve the result
     result = execute_sql_script(uri, script, params=(schema,), print_status=print_status)
     
     # Return True if schema exists, otherwise False
     if result is not None:
-        return result[0]  # The first column contains the result of EXISTS
+        return bool(result[0])  # The first column contains the result of EXISTS
     else:
         return False
 
 
-def table_exists(uri: str, table: str, print_status=True) -> bool:
+def table_exists(uri: str, table: str, print_status: bool = True) -> bool:
     """
-    Checks if a table exists in the PostgreSQL database.
+    Check if a table exists in the PostgreSQL database.
 
     Parameters
     ----------
     uri : str
         PostgreSQL DB connection string.
     table : str
-        Name of the table to check for existence.
-        Ensure the table name is properly quoted in the SQL query.
+        Name of the table to check for existence (quoted correctly in the query).
     print_status : bool, optional
-        If True, displays status messages during the execution (default is True).
+        If ``True``, displays status messages during the execution (default is ``True``).
 
     Returns
     -------
     bool
-        True if the table exists, False otherwise.
+        ``True`` if the table exists, ``False`` otherwise.
 
     Notes
     -----
@@ -317,27 +348,33 @@ def table_exists(uri: str, table: str, print_status=True) -> bool:
     - This function works regardless of the schema, provided the table name is correct.
     """
     # SQL script to check table existence
-    script = '''
+    script = """
         SELECT EXISTS (
             SELECT 1
             FROM information_schema.tables
             WHERE table_name = %s
         ) AS table_existence;
-    '''
+    """
     
     # Execute the SQL script and retrieve the result
     result = execute_sql_script(uri, script, params=(table,), print_status=print_status)
     
     # Return True if the table exists, otherwise False
     if result is not None:
-        return result[0]  # The first column contains the result of EXISTS
+        return bool(result[0])  # The first column contains the result of EXISTS
     else:
         return False
 
 
-def columns_exist(uri: str, columns: list, table: str, schema: str, print_status=True) -> dict:
+def columns_exist(
+    uri: str,
+    columns: List[str],
+    table: str,
+    schema: str,
+    print_status: bool = True
+) -> Dict[str, bool]:
     """
-    Checks if specified columns exist in a given table in the PostgreSQL database.
+    Check whether specified columns exist in a given table in the PostgreSQL database.
 
     Parameters
     ----------
@@ -350,28 +387,28 @@ def columns_exist(uri: str, columns: list, table: str, schema: str, print_status
     schema : str
         Name of the schema containing the table.
     print_status : bool, optional
-        If True, displays status messages during the execution (default is True).
+        If ``True``, displays status messages during the execution (default is ``True``).
 
     Returns
     -------
     dict
-        A dictionary with column names as keys and their existence status (True/False) as values.
+        Dictionary with column names as keys and their existence status (``True``/``False``) as values.
 
     Notes
     -----
     - This function uses `execute_sql_script` for executing the SQL command.
-    - This function queries the information_schema.columns view to check for column existence.
+    - This function queries the ``information_schema.columns`` view to check for column existence.
     - Ensure that the schema and table names are properly quoted in the SQL query.
     """
     # SQL script to check column existence
-    script = '''
+    script = """
         SELECT column_name
         FROM information_schema.columns
         WHERE table_name = %s
         AND table_schema = %s
         AND column_name IN %s;
-    '''
-    columns_tuple = tuple(columns) # Convert list to tuple for SQL
+    """
+    columns_tuple = tuple(columns)  # Convert list to tuple for SQL
     params = (table, schema, columns_tuple)
     
     # Execute the SQL script and retrieve the result
@@ -389,9 +426,9 @@ def columns_exist(uri: str, columns: list, table: str, schema: str, print_status
         return {col: False for col in columns}
 
 
-def validate_columns(uri: str, columns: list, table: str, schema: str, print_status=True) -> str:
+def validate_columns(uri: str, columns: List[str], table: str, schema: str, print_status: bool = True) -> str:
     """
-    Validates the existence of specified columns in a database table and formats them for SQL queries.
+    Validate the existence of specified columns in a database table and format them for SQL queries.
 
     Parameters
     ----------
@@ -404,7 +441,7 @@ def validate_columns(uri: str, columns: list, table: str, schema: str, print_sta
     schema : str
         Name of the schema containing the table.
     print_status : bool, optional
-        If True, prints status messages to the console. Default is True.
+        If ``True``, prints status messages to the console. Default is ``True``.
 
     Returns
     -------
@@ -434,4 +471,3 @@ def validate_columns(uri: str, columns: list, table: str, schema: str, print_sta
         
     columns_part = ", ".join(f'"{col}"' for col in columns)  # Properly quote column names
     return columns_part
-

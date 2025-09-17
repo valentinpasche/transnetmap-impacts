@@ -1,8 +1,41 @@
 # -*- coding: utf-8 -*-
+"""
+General-purpose utilities for transnetmap.
 
-def convert_to_pg_array(path) -> str:
+This module provides small helpers for:
+
+- lightweight data formatting (e.g., `convert_to_pg_array`, `to_engineering_notation`).
+- console UX (spinner) with cooperative stop via ``threading.Event``.
+- string utilities (e.g., `cap_first`, `wrap_text_at_space`).
+- list utilities preserving order (e.g., `remove_duplicates_preserve_order`).
+"""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, List, TypeVar, Union
+from pathlib import Path
+
+if TYPE_CHECKING:  # noqa: F401
+    import numpy as np
+    import threading
+
+__all__ = [
+    "convert_to_pg_array",
+    "validate_input_file_name",
+    "spinner",
+    "to_engineering_notation",
+    "cap_first",
+    "remove_duplicates_preserve_order",
+    "wrap_text_at_space",
+]
+
+
+# -----------------------------------------------------------------------------
+# Data formatting helpers
+# -----------------------------------------------------------------------------
+def convert_to_pg_array(path: List[int] | np.ndarray) -> str:
     """
-    Converts a list of integers to a PostgreSQL array string.
+    Convert a list/array of integers to a PostgreSQL array string.
 
     Parameters
     ----------
@@ -12,7 +45,7 @@ def convert_to_pg_array(path) -> str:
     Returns
     -------
     str
-        A string representation of the path in PostgreSQL array format, e.g., '{1,2,3}'.
+        A string representation of the path in PostgreSQL array format, e.g., ``"{1,2,3}"``.
 
     Examples
     --------
@@ -28,15 +61,75 @@ def convert_to_pg_array(path) -> str:
     - This function is typically used to format data before writing it to a PostgreSQL database.
     - Paths must be lists or numpy arrays containing integers.
     """
-    return '{' + ','.join(map(str, path)) + '}'
+    return "{" + ",".join(map(str, path)) + "}"
 
 
-def spinner(message, stop_event) -> None:
+# -----------------------------------------------------------------------------
+# File name or path helpers
+# -----------------------------------------------------------------------------
+def validate_input_file_name(
+    file_or_path: Union[str, Path],
+    base_name: str,
+    *,
+    allow_gz: bool = False,
+) -> Path:
     """
-    Displays a rotary loading indicator in the console.
+    Validate that the basename of `file_or_path` matches `base_name`.
+    Accepts either a filename or a full path (relative or absolute).
+
+    Parameters
+    ----------
+    file_or_path : str or pathlib.Path
+        Filename or path to validate. Relative paths are supported.
+    base_name : str
+        Expected filename (e.g., "stations_1.csv").
+    allow_gz : bool, optional
+        If True, also accepts `<base_name>.gz` (e.g., "stations_1.csv.gz").
+
+    Returns
+    -------
+    pathlib.Path
+        The input converted to a Path (with '~' expanded).
+
+    Raises
+    ------
+    TypeError
+        If `file_or_path` is neither `str` nor `pathlib.Path`.
+    ValueError
+        If the basename does not match the expected name.
+
+    Notes
+    -----
+    Only the basename is checked (i.e., `Path(file_or_path).name`).
+    """
+    if isinstance(file_or_path, (str, Path)):
+        p = Path(file_or_path).expanduser()
+    else:
+        raise TypeError("`file_or_path` must be a `str` or `pathlib.Path`.")
+
+    allowed = {base_name}
+    if allow_gz:
+        allowed.add(base_name + ".gz")
+
+    if p.name not in allowed:
+        raise ValueError(
+            "Non-compliant file name.\n"
+            f"Expected: {', '.join(sorted(allowed))}\n"
+            f"Received: {p.name}\n"
+            "Tip: pass either a filename or a full path; only the basename is checked."
+        )
+    return p
+
+
+# -----------------------------------------------------------------------------
+# Console UX
+# -----------------------------------------------------------------------------
+def spinner(message: str, stop_event: threading.Event) -> None:
+    """
+    Display a rotary loading indicator in the console.
 
     This function creates a spinner animation in the console to indicate progress.
-    The animation stops when the `stop_event` is set.
+    The animation stops when the ``stop_event`` is set.
 
     Parameters
     ----------
@@ -68,23 +161,35 @@ def spinner(message, stop_event) -> None:
     """
     import itertools
     import time
-    
-    for frame in itertools.cycle(['|', '/', '-', '\\']):
+
+    for frame in itertools.cycle(["|", "/", "-", "\\"]):
         if stop_event.is_set():
             break
-        print(f'\r{message} {frame}', end='', flush=True)
+        print(f"\r{message} {frame}", end="", flush=True)
         time.sleep(0.5)
-    print('\r' + ' ' * (len(message) + 2), end='\r', flush=True)  # Clear line after spinner stops
+    print("\r" + " " * (len(message) + 2), end="\r", flush=True)  # Clear line after spinner stops
 
 
-def to_engineering_notation(number) -> str:
+def to_engineering_notation(number: float | int) -> str:
     """
-    Converts a number to engineering notation (multiples of 10^3).
-    Returns a string with the value and the corresponding suffix (e.g., '3.2k', '1.5M').
+    Convert a number to engineering notation (multiples of `10^3`).
+
+    Returns a string with the value and the corresponding suffix (e.g., ``"3.2k"``, ``"1.5M"``).  
+    Available suffixes : `["k", "M", "G", "T", "P"]`
+    
+    Parameters
+    ----------
+    number : float or int
+        Numeric value to convert.
+
+    Returns
+    -------
+    str
+        Engineering-notation string.
     """
     if number == 0:
         return "0"
-    
+
     # Define suffixes for engineering notation
     suffixes = ["", "k", "M", "G", "T", "P"]
     magnitude = max(0, min(len(suffixes) - 1, int((len(str(int(abs(number)))) - 1) // 3)))
@@ -92,16 +197,35 @@ def to_engineering_notation(number) -> str:
     return f"{scaled_number:.3g}{suffixes[magnitude]}"
 
 
-def cap_first(s) -> str:
+# -----------------------------------------------------------------------------
+# String & list helpers
+# -----------------------------------------------------------------------------
+def cap_first(s: str) -> str:
+    """
+    Capitalize the first character of a string (no locale transformations).
+
+    Parameters
+    ----------
+    s : str
+        Input string.
+
+    Returns
+    -------
+    str
+        String with the first character uppercased.
+    """
     return s[:1].upper() + s[1:]
 
 
-def remove_duplicates_preserve_order(lst) -> list:
-    """
-    Removes duplicate elements from a list while preserving the original order.
+T = TypeVar("T")
 
-    Useful for cases where unique values are required, but their order of appearance matters
-    (e.g. for controlling the display order of map layers or popup fields).
+
+def remove_duplicates_preserve_order(lst: List[T]) -> List[T]:
+    """
+    Remove duplicated elements from a list while preserving the original order.
+
+    Useful for cases where unique values are required, but their order of appearance matters  
+    (e.g., for controlling the display order of map layers or popup fields).
 
     Parameters
     ----------
@@ -115,7 +239,7 @@ def remove_duplicates_preserve_order(lst) -> list:
 
     Examples
     --------
-    >>> remove_duplicates_preserve_order(["a", "b", "a", "c", "b"])
+    >>> remove_duplicates_preserve_order(["a", "b", "a", "c", "b"])  # doctest: +NORMALIZE_WHITESPACE
     ['a', 'b', 'c']
     """
     seen = set()
@@ -124,7 +248,8 @@ def remove_duplicates_preserve_order(lst) -> list:
 
 def wrap_text_at_space(text: str, max_line_length: int) -> str:
     """
-    Inserts <br> tags into `text` at the nearest space after `max_line_length`.
+    Insert ``<br>`` tags into text at the nearest space after ``max_line_length``.
+
     Prevents breaking words and supports long paragraphs.
 
     Parameters
@@ -137,10 +262,10 @@ def wrap_text_at_space(text: str, max_line_length: int) -> str:
     Returns
     -------
     str
-        HTML-compatible text with <br> tags inserted.
+        HTML-compatible text with ``<br>`` tags inserted.
     """
     words = text.split()
-    wrapped_lines = []
+    wrapped_lines: List[str] = []
     current_line = ""
 
     for word in words:
@@ -156,11 +281,10 @@ def wrap_text_at_space(text: str, max_line_length: int) -> str:
     return "<br>".join(wrapped_lines)
 
 
-# ===========================
+# -----------------------------------------------------------------------------
+# Manual test (no side effects at import)
+# -----------------------------------------------------------------------------
 if __name__ == "__main__":
-    
     to_engineering_notation(0)
     to_engineering_notation(500000000)
     to_engineering_notation(-50000)
-    
-    

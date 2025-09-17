@@ -1,0 +1,8 @@
+mkdocs
+mkdocs-material
+mkdocstrings
+mkdocstrings-python
+mkdocs-autorefs
+mkdocs-include-markdown-plugin
+pymdown-extensions
+mkdocs-section-index

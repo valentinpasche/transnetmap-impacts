@@ -1,8 +1,30 @@
 # -*- coding: utf-8 -*-
+"""
+Child network entities for transnetmap: **Stations** and **Links**.
 
-from typing import Union
+This module contains two small classes that help prepare, validate, and persist
+stations and links related to a network. They focus on:
+- configuration validation via the dataclass `transnetmap.utils.config.ParamConfig`,
+- CSV → dataframe/GeoDataFrame ingestion with semantic checks,
+- simple SQL persistence and reading using PostgreSQL/PostGIS.
+"""
+
+from __future__ import annotations
+
+from typing import Optional, Union, TYPE_CHECKING
+
 from transnetmap.utils.config import ParamConfig
 
+if TYPE_CHECKING:  # noqa: F401
+    import folium
+    from pathlib import Path
+
+__all__ = ["Stations", "Links"]
+
+
+# -----------------------------------------------------------------------------
+# Class: Stations
+# -----------------------------------------------------------------------------
 class Stations:
     """
     Represents the Stations object in the network, handling station-specific
@@ -13,14 +35,19 @@ class Stations:
     within a specific network and National Passenger Traffic Model (NPTM) schema.
     
     Constants
-    ----------
+    ---------
     _type : str
+    
         The type of object, always set to 'stations'.
 
     Attributes
     ----------
+    config : ParamConfig
+        Dataclass with validated configuration parameters
     network_number : int
         The unique identification number of the network this station set belongs to.
+    table : geopandas.GeoDataFrame
+        Table with data relating to the Stations class (None at initialisation).
     db_nptm_schema : str
         Name of the schema containing the National Passenger Traffic Model (NPTM) data.
         This schema acts as both a namespace and an identifier for dependent tables.
@@ -46,7 +73,7 @@ class Stations:
 
     _type = 'stations'  # Object type
 
-    def __init__(self, param: Union[dict, ParamConfig], required_fields=None):
+    def __init__(self, param: Union[dict, ParamConfig], *, required_fields: Optional[list] = None) -> None:
         """
         Initializes the Stations instance with specified and validated parameters.
 
@@ -56,24 +83,26 @@ class Stations:
             A dictionary of configuration parameters or an already validated ParamConfig object.
 
             Required keys (for the default configuration):
-            - "network_number" : int
+                
+            - `"network_number"` : int  
                 Unique identification number for the network instance.
-            - "db_nptm_schema" : str
+            - `"db_nptm_schema"` : str  
                 Name of the schema containing the National Passenger Traffic Model data.
-            - "db_zones_table" : str
+            - `"db_zones_table"` : str  
                 Name of the database table containing zone data.
-            - "uri" : str
+            - `"uri"` : str  
                 PostgreSQL database connection string.
 
             Optional keys:
-            - "main_print" : bool
+                
+            - `"main_print"` : bool  
                 Enables console output for execution status. Default is False.
-            - "sql_echo" : bool
+            - `"sql_echo"` : bool  
                 Enables SQL query logging. Default is False.
 
         required_fields : list, optional
             A custom list of fields required for this specific instance. If not provided,
-            defaults to ["network_number", "db_nptm_schema", "db_zones_table", "uri"].
+            defaults to `["network_number", "db_nptm_schema", "db_zones_table", "uri"]`.
 
         Raises
         ------
@@ -138,23 +167,23 @@ class Stations:
         raise AttributeError("This method is not available in Stations class.")
 
 
-    def to_sql(self, if_exists='fail') -> None:
+    def to_sql(self, *, if_exists='fail') -> None:
         """
         Writes the stations table to the database.
 
         Parameters
         ----------
         if_exists : str, optional
-            Determines behavior if the table already exists (default is 'fail').
-            Options:
-                - 'fail' : Raises an error if the table exists.
-                - 'replace' : Drops and recreates the table.
-                - 'append' : Adds data to the existing table (not allowed here).
+            Determines behavior if the table already exists (default is `'fail'`).  
+            Options:  
+                - `'fail'` : Raises an error if the table exists.  
+                - `'replace'` : Drops and recreates the table.  
+                - `'append'` : Adds data to the existing table (not allowed here).  
 
         Raises
         ------
         ValueError
-            If 'if_exists' is set to 'append', as it is not allowed to avoid data duplication.
+            If `'if_exists'` is set to `'append'`, as it is not allowed to avoid data duplication.
 
         Returns
         -------
@@ -218,7 +247,7 @@ class Stations:
             print(f"Writing to the database is successful. Table: '{schema}.{table_name}'")
 
 
-    def read_sql(self) -> "Stations":
+    def read_sql(self) -> Stations:
         """
         Reads the stations table from the database and loads it into the instance.
     
@@ -230,7 +259,7 @@ class Stations:
         Raises
         ------
         RuntimeError
-            If the stations table does not exist in the database.
+            If the links table does not exist in the database.
         """
         from transnetmap.utils.sql import table_exists
         from sqlalchemy import create_engine
@@ -268,7 +297,7 @@ class Stations:
         return self
 
 
-    def read_csv(self, file: str) -> "Stations":
+    def read_csv(self, file: Union[str, Path]) -> Stations:
         """
         Reads a CSV file containing station data and validates its content.
     
@@ -277,17 +306,21 @@ class Stations:
         based on NPTM data. The method performs several validations, including
         checks for missing columns, duplicate station codes or names, and
         overlapping geometries within a 500-meter buffer.
+        
+        Expected format
+        ---------------
+        1) Columns: 
+        
+            ['CODE', 'NAME', 'LAT', 'LNG']  
+        
+           - Column separator: ';'  
+           - Decimal separator: '.'  
+           - Latitude and longitude coordinates: WGS 84 (EPSG:4326)  
     
         Parameters
         ----------
-        file : str
-            Full path to the CSV file (relative or absolute).
-            Expected format:
-                - Column separator: ';'
-                - Decimal separator: '.'
-                - Header (column names): present in the first line
-                - Required columns: 'CODE', 'NAME', 'LAT', 'LNG'
-                - Latitude and longitude coordinates: WGS 84 (EPSG:4326)
+        file : str or pathlib.Path
+            Path to the CSV file.
     
         Returns
         -------
@@ -302,9 +335,9 @@ class Stations:
         KeyError
             If required configuration parameters for NPTM zones are missing.
         RuntimeError
-            If required columns are missing from the CSV.
-            If duplicate station codes, names, or coordinates are detected.
-            If geometries overlap within a 500-meter buffer.
+            If required columns are missing from the CSV.  
+            If duplicate station codes, names, or coordinates are detected.  
+            If geometries overlap within a 500-meter buffer.  
         """
         import pandas as pd
         import geopandas as gpd
@@ -312,13 +345,11 @@ class Stations:
         from shapely.geometry import Point
         from transnetmap.pre.nptm import NPTM
         from transnetmap.utils.sql import table_exists
-    
-        # Semantic control: validate the file name
-        expected_file_name = f'{self._type}_{self.network_number}.csv'
-        if not file.endswith(expected_file_name):
-            raise ValueError(
-                f"Non-compliant table name. Expected format: 'stations_[number].csv'. Received: {file}"
-            )
+        from transnetmap.utils.utils import validate_input_file_name
+        
+        # Validate file name format
+        file_str_valid = f'{self._type}_{self.network_number}.csv'
+        validate_input_file_name(file, file_str_valid)
         
         if self.main_print:
             print('\nStarting creation of the "stations" table.')
@@ -413,7 +444,10 @@ class Stations:
         if num_no_match > 0:
             next_id_start = 10001  # Starting ID for unmatched stations
             gdf_inside['id'] = gdf_inside['id'].fillna(
-                pd.Series(range(next_id_start, next_id_start + num_no_match), index=gdf_inside.index[gdf_inside['id'].isna()])
+                pd.Series(
+                    range(next_id_start, next_id_start + num_no_match), 
+                    index=gdf_inside.index[gdf_inside['id'].isna()]
+                )
             ).astype('int16')
         
         # Finalize the table
@@ -431,13 +465,14 @@ class Stations:
 
     def show(
         self,
-        return_layers=False,
-        file_name="stations_map",
-        save_to_desktop=False,
-        custom_path=None,
-        location=None,
-        zoom_start=None
-    ):
+        *,
+        return_layers: bool = False,
+        file_name: str = "stations_map",
+        save_to_desktop: bool = False,
+        custom_path: Optional[str] = None,
+        location: Optional[tuple[float, float]] = None,
+        zoom_start: Optional[int] = None
+    ) -> Optional[folium.GeoJson | folium.Map]:
         """
         Displays a map of the stations using Folium or returns the GeoJson object.
     
@@ -464,8 +499,9 @@ class Stations:
         Returns
         -------
         folium.GeoJson or None
-            If `return_layers` is True, returns the Folium GeoJson object.
-            Otherwise, the map is displayed and saved.
+            If `return_layers` is True, returns the Folium GeoJson object.  
+            Otherwise, the map is displayed and saved.  
+            *The `folium.Map` object is returned only for internal use.*
     
         Raises
         ------
@@ -474,20 +510,20 @@ class Stations:
         ValueError
             If the dataset is empty or has no valid geometry column for mapping.
         """
-        # 🔹 Step 1: Validate input data
+        # Step 1: Validate input data
         from folium import GeoJson, GeoJsonTooltip, GeoJsonPopup
-        from transnetmap.utils.map_utils import show_map, auto_fit_map
+        from transnetmap.utils.map import show_map, auto_fit_map
     
         if self.table is None:
-            raise AttributeError("❌ The stations table is not loaded. Use 'read_sql()' or 'read_csv()' first.")
+            raise AttributeError("The stations table is not loaded. Use 'read_sql()' or 'read_csv()' first.")
             
         if self.table.empty:
-            raise ValueError("⚠️ The stations dataset is empty. Ensure the data is correctly loaded.")
+            raise ValueError("The stations dataset is empty. Ensure the data is correctly loaded.")
     
         if "geom" not in self.table.columns:
-            raise ValueError("⚠️ No valid geometry column found. The dataset is not valid for mapping.")
+            raise ValueError("No valid geometry column found. The dataset is not valid for mapping.")
     
-        # 🔹 Step 2: Configure tooltips and popups
+        # Step 2: Configure tooltips and popups
         tooltip = GeoJsonTooltip(fields=['name'], aliases=['Name:'], labels=True)
         popup = GeoJsonPopup(
             fields=['name', 'lng', 'lat', 'id'],
@@ -495,7 +531,7 @@ class Stations:
             labels=True
         )
     
-        # 🔹 Step 3: Create the GeoJson layer
+        # Step 3: Create the GeoJson layer
         stations_layer = GeoJson(
             self.table,
             name="Stations",
@@ -505,22 +541,26 @@ class Stations:
             popup=popup
         )
     
-        # 🔹 Step 4: Return the layer if requested
+        # Step 4: Return the layer if requested
         if return_layers:
             return stations_layer
     
-        # 🔹 Step 5: Create the map, auto-fit bounds or use custom location/zoom
+        # Step 5: Create the map, auto-fit bounds or use custom location/zoom
         m = auto_fit_map(self.table, location=location, zoom_start=zoom_start)
     
-        # 🔹 Step 6: Add the stations layer to the map
+        # Step 6: Add the stations layer to the map
         stations_layer.add_to(m)
     
-        # 🔹 Step 7: Save and display the map
+        # Step 7: Save and display the map
         show_map(m, file_name=file_name, save_to_desktop=save_to_desktop, custom_path=custom_path)
         
-        return None  # ✅ The map is displayed, no need to return anything
+        return m  # The map is displayed for internal use only.
 
 
+
+# -----------------------------------------------------------------------------
+# Class: Links
+# -----------------------------------------------------------------------------
 class Links:
     """
     Represents the Links object in the network, handling link-specific attributes 
@@ -530,16 +570,24 @@ class Links:
     at various levels (e.g., lower, main, higher) within a network.
     
     Constants
-    ----------
+    ---------
     _type : str
+    
         The type of object, always set to 'links'.
         
     Attributes
     ----------
+    config : ParamConfig
+        Dataclass with validated configuration parameters.
     network_number : int
         The unique identification number of the network this link set belongs to.
+    table : pandas.DataFrame
+        Table with data relating to the Links class (None at initialisation).
+    db_nptm_schema : str
+        Name of the schema containing the National Passenger Traffic Model (NPTM) data.
+        This schema acts as both a namespace and an identifier for dependent tables.
     table_name : str
-        The name of the database table for links, constructed as 'links_<network_number>'.
+        The name of the database table for links, constructed as 'links_<network_number>_<db_nptm_schema>'.
     uri : str
         PostgreSQL database connection string for reading and writing data.
     main_print : bool
@@ -558,7 +606,7 @@ class Links:
     
     _type = 'links'  # Object type
 
-    def __init__(self, param: Union[dict, ParamConfig], required_fields=None):
+    def __init__(self, param: Union[dict, ParamConfig], *, required_fields: Optional[list] = None) -> None:
         """
         Initializes the Links instance with specified and validated parameters.
 
@@ -568,20 +616,24 @@ class Links:
             A dictionary of configuration parameters or an already validated ParamConfig object.
 
             Required keys (for the default configuration):
-            - "network_number" : int
+                
+            - `"network_number"` : int  
                 Unique identification number for the network instance.
-            - "uri" : str
+            - `"db_nptm_schema"` : str  
+                Name of the schema containing the National Passenger Traffic Model data.
+            - `"uri"` : str  
                 PostgreSQL database connection string.
 
             Optional keys:
-            - "main_print" : bool
+                
+            - `"main_print"` : bool  
                 Enables console output for execution status. Default is False.
-            - "sql_echo" : bool
+            - `"sql_echo"` : bool  
                 Enables SQL query logging. Default is False.
 
         required_fields : list, optional
             A custom list of fields required for this specific instance. If not provided,
-            defaults to ["network_number", "uri"].
+            defaults to `["network_number", "uri"]`.
 
         Raises
         ------
@@ -599,7 +651,7 @@ class Links:
           parameters are set to default values if not provided.
         """
         # Define required fields for Links (default)
-        default_required_fields = ["network_number", "uri"]
+        default_required_fields = ["network_number", "db_nptm_schema", "uri"]
 
         # Use custom required fields if provided, otherwise use the default ones
         required_fields = required_fields or default_required_fields
@@ -620,10 +672,11 @@ class Links:
 
         # Extract commonly used attributes
         self.network_number = self.config.network_number
-        self.uri = self.config.uri
+        self.db_nptm_schema = self.config.db_nptm_schema
+        self.uri = self.config.uri        
 
         # Define table name for Links
-        self.table_name = f'{self._type}_{self.network_number}'
+        self.table_name = f'{self._type}_{self.network_number}_{self.db_nptm_schema}'
 
         # Extract and adjust parameters based on execution context
         self.main_print = self.config.main_print or (__name__ == "__main__")
@@ -645,23 +698,23 @@ class Links:
         raise AttributeError("This method is not available in Links class.")
 
 
-    def to_sql(self, if_exists='fail') -> None:
+    def to_sql(self, *, if_exists='fail') -> None:
         """
         Writes the links table to the database.
 
         Parameters
         ----------
         if_exists : str, optional
-            Determines behavior if the table already exists (default is 'fail').
-            Options:
-                - 'fail' : Raises an error if the table exists.
-                - 'replace' : Drops and recreates the table.
-                - 'append' : Adds data to the existing table (not allowed here).
+            Determines behavior if the table already exists (default is `'fail'`).  
+            Options:  
+                - `'fail'` : Raises an error if the table exists.  
+                - `'replace'` : Drops and recreates the table.  
+                - `'append'` : Adds data to the existing table (not allowed here).  
 
         Raises
         ------
         ValueError
-            If 'if_exists' is set to 'append', as it is not allowed to avoid data duplication.
+            If `'if_exists'` is set to `'append'`, as it is not allowed to avoid data duplication.
 
         Returns
         -------
@@ -719,7 +772,7 @@ class Links:
             print(f"Writing to the database is successful. Table: '{schema}.{table_name}'")
 
 
-    def read_sql(self) -> "Links":
+    def read_sql(self) -> Links:
         """
         Reads the links table from the database and loads it into the instance.
     
@@ -731,7 +784,7 @@ class Links:
         Raises
         ------
         RuntimeError
-            If the stations table does not exist in the database.
+            If the links table does not exist in the database.
         """
         from transnetmap.utils.sql import table_exists
         from sqlalchemy import create_engine
@@ -762,7 +815,7 @@ class Links:
         return self  
 
 
-    def read_csv(self, file: str) -> "Links":
+    def read_csv(self, file: Union[str, Path]) -> Links:
         """
         Reads a CSV file containing link data and validates its content.
     
@@ -770,16 +823,22 @@ class Links:
         link levels: lower (1), main (2), and higher (3). The method performs
         several validations, including checks for missing columns, incomplete
         links, and duplicate links (both direct and reverse).
-    
+        
+        Expected format
+        ---------------
+        1) Columns: 
+        
+            ['LOWER_A', 'LOWER_B', 'MAIN_A', 'MAIN_B', 'HIGHER_A', 'HIGHER_B']  
+        
+           - Column separator: ';'  
+           - Decimal separator: '.'  
+           - Latitude and longitude coordinates: WGS 84 (EPSG:4326)  
+           - Column pairs may be empty (level not present in the network). They are ignored.
+        
         Parameters
         ----------
-        file : str
-            Full path to the CSV file (relative or absolute).
-            Expected format:
-                - Column separator: ';'
-                - Header (column names): present in the first line
-                - Required columns: 'LOWER_A', 'LOWER_B', 'MAIN_A', 'MAIN_B', 
-                                    'HIGHER_A', 'HIGHER_B'
+        file : str or pathlib.Path
+            Path to the CSV file.
     
         Returns
         -------
@@ -792,20 +851,17 @@ class Links:
         ValueError
             If the file name does not match the expected format ('links_[number].csv').
         RuntimeError
-            If required columns are missing from the CSV.
-            If there are incomplete links (e.g., one station code is missing in a pair).
-            If duplicate links are detected (including reverse duplicates).
+            If required columns are missing from the CSV.  
+            If there are incomplete links (e.g., one station code is missing in a pair).  
+            If duplicate links are detected (including reverse duplicates).  
         """
         import pandas as pd
-    
+        from transnetmap.utils.utils import validate_input_file_name
+        
         # Validate file name format
-        file_str = f'{self._type}_{self.network_number}.csv'
-        if not file.endswith(file_str):
-            raise ValueError(
-                f"Non-compliant table name.\n"
-                f"Expected format: 'links_[number].csv'. Received: {file}"
-            )
-    
+        file_str_valid = f'{self._type}_{self.network_number}.csv'
+        validate_input_file_name(file, file_str_valid)
+        
         if self.main_print:
             print('\nStarting creation of the "links" table.')
             
@@ -875,7 +931,9 @@ class Links:
         return self
 
 
-# ===========================
+# -----------------------------------------------------------------------------
+# Main (example-only)
+# -----------------------------------------------------------------------------
 if __name__ == "__main__":
     
     # Complete dictionary of creation and calculation parameters

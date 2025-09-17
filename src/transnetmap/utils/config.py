@@ -1,16 +1,68 @@
 # -*- coding: utf-8 -*-
+"""
+Configuration containers for the transnetmap package.
+
+This module defines two dataclasses that centralize user-facing parameters:
+    
+- `ParamConfig` – Global parameters shared by multiple classes.
+- `HeatMapConfig` – Visualization and export settings for the HeatMap workflow.
+
+**Use ``...Config.describe()`` to display a clean summary of current settings.**
+
+Notes
+-----
+* It is intended to be imported and the configuration objects injected into the
+  corresponding classes/functions.
+"""
+
+from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Optional, List, Tuple, Dict, Union, Any
+from typing import Any, Dict, List, Optional, Tuple, Union
 from urllib.parse import urlparse
 
+__all__ = ["ParamConfig", "HeatMapConfig"]
+
+
+# -----------------------------------------------------------------------------
+# ParamConfig
+# -----------------------------------------------------------------------------
 @dataclass
 class ParamConfig:
     """
     Base configuration class for handling parameters across all transnetmap classes,
     with extended validation for complex parameters.
+
+    **Use ``ParamConfig.describe()`` to display a clean summary of current settings.**
     
-    Use `ParamConfig.describe()` to display a clean summary of current settings.
+    Notes
+    -----
+    When initializing ``ParamConfig`` **directly** with a dictionary, you must unpack it
+    with ``**param`` so that keys map to dataclass fields. In contrast, transnetmap
+    classes accept either a ``dict`` or an existing ``ParamConfig`` and will handle
+    conversion/validation internally.
+    
+    Examples
+    --------
+        # Direct instantiation (unpack required):  
+        >>> param = {"network_number": 1, "db_nptm_schema": "myschema", ...}
+        >>> config = ParamConfig(**param)  # keys are mapped to fields via **
+    
+        # Within a transnetmap class (no unpack needed, accepts dict or ParamConfig):
+        >>> class NPTM:
+        ...     def __init__(self, param: Union[dict, ParamConfig], required_fields=None):
+        ...         
+        ...         # Case 1: param is a dictionary
+        ...         if isinstance(param, dict):
+        ...         self.config = ParamConfig(**param, required_fields=required_fields)
+        ...         self.config.validate()
+        ...         
+        ...         # Case 2: param is already a ParamConfig
+        ...         elif isinstance(param, ParamConfig):
+        ...         self.config = param  # Use the existing ParamConfig
+        ...         self.config.validate_for_class(required_fields)
+        ...
+        >>> nptm = NPTM(param={"network_number": 1, "db_nptm_schema": "myschema", ...})
 
     Attributes
     ----------
@@ -24,15 +76,14 @@ class ParamConfig:
         Specifies the type of transportation to use for extending the network in analysis.
         Accepted values are:
             - 'IMT': Refers to the Individual Motorized Transport table.
-            - 'PT': Refers to the Public Transport table.
+            - 'PT' : Refers to the Public Transport table.
         This parameter determines which dataset is used to supplement the network
         with additional information during computations such as Dijkstra's algorithm.
     db_nptm_schema : Optional[str]
         Name of the schema in the PostgreSQL database that contains data from the
         National Passenger Traffic Model (NPTM). Commonly used for zone and travel
-        data management.
-        This schema serves as a namespace for the model and acts as an identifier
-        used in constructing dependent table names.
+        data management. This schema serves as a namespace for the model and acts as
+        an identifier used in constructing dependent table names.
     db_zones_table : Optional[str]
         Name of the table containing data relating to NPTM zones. This table is
         essential for spatial operations and visual outputs such as heat maps.
@@ -43,8 +94,8 @@ class ParamConfig:
         Name of the table containing Public Transport (PT) data, such as travel
         times and distances. Used in NPTM-related computations and post-processing.
     uri : Optional[str]
-        Connection string for the PostgreSQL database, formatted as 
-        "postgresql://user:password@host:port/database". This is required for any
+        Connection string for the PostgreSQL database, formatted as
+        ``postgresql://user:password@host:port/database``. This is required for any
         database interaction.
     main_print : bool
         Controls whether general execution information should be printed to the
@@ -53,9 +104,10 @@ class ParamConfig:
         Controls whether SQL statements executed via SQLAlchemy should be logged
         to the console. Primarily useful for debugging database interactions.
     required_fields : List[str]
-        List of field names that are required for validation. This is set 
+        List of field names that are required for validation. This is set
         dynamically in the context of each class that uses ParamConfig.
     """
+
     # Global parameters (common to all classes)
     network_number: Optional[int] = None  # Unique identifier for a network instance.
     physical_values_set_number: Optional[int] = None  # Identifier for a physical value set (e.g., pvs1, pvs2).
@@ -70,8 +122,8 @@ class ParamConfig:
 
     # Custom field validation (e.g., required fields)
     required_fields: List[str] = field(default_factory=list)  # Dynamically set in each class.
-    
-    def validate(self) -> "ParamConfig":
+
+    def validate(self) -> ParamConfig:
         """
         Validate that all required fields are provided and check complex formats.
         """
@@ -79,44 +131,46 @@ class ParamConfig:
         for field_name in self.required_fields:
             if getattr(self, field_name) is None:
                 raise ValueError(f"Required parameter '{field_name}' is missing.")
-        
+
         # Check parameter types
         self._validate_types()
 
         # Validate specific fields
-        self._validate_uri() # Validate the uri string for database
-        self._validate_network_extension_type() # Validate the network extension type
+        self._validate_uri()  # Validate the uri string for database
+        self._validate_network_extension_type()  # Validate the network extension type
 
-    def _validate_types(self):
-            """
-            Explicitly validate types for each field.
-            """
-            type_map = {
-                "network_number": (int, type(None)),
-                "physical_values_set_number": (int, type(None)),
-                "network_extension_type": (str, type(None)),
-                "db_nptm_schema": (str, type(None)),
-                "db_zones_table": (str, type(None)),
-                "db_imt_table": (str, type(None)),
-                "db_pt_table": (str, type(None)),
-                "uri": (str,),
-                "main_print": (bool,),
-                "sql_echo": (bool,),
-            }
-    
-            # Validate types only for fields in required_fields
-            for field_name in self.required_fields:
-                value = getattr(self, field_name)
-                expected_types = type_map.get(field_name, None)
-    
-                if expected_types is None:
-                    raise KeyError(f"Field '{field_name}' is not recognized in type_map.")
-                if not isinstance(value, expected_types):
-                    raise TypeError(
-                        f"Parameter '{field_name}' must be of type {expected_types}, got {type(value).__name__}."
-                    )
-    
-    def _validate_uri(self):
+        return self
+
+    def _validate_types(self) -> None:
+        """
+        Explicitly validate types for each field.
+        """
+        type_map = {
+            "network_number": (int, type(None)),
+            "physical_values_set_number": (int, type(None)),
+            "network_extension_type": (str, type(None)),
+            "db_nptm_schema": (str, type(None)),
+            "db_zones_table": (str, type(None)),
+            "db_imt_table": (str, type(None)),
+            "db_pt_table": (str, type(None)),
+            "uri": (str,),
+            "main_print": (bool,),
+            "sql_echo": (bool,),
+        }
+
+        # Validate types only for fields in required_fields
+        for field_name in self.required_fields:
+            value = getattr(self, field_name)
+            expected_types = type_map.get(field_name, None)
+
+            if expected_types is None:
+                raise KeyError(f"Field '{field_name}' is not recognized in type_map.")
+            if not isinstance(value, expected_types):
+                raise TypeError(
+                    f"Parameter '{field_name}' must be of type {expected_types}, got {type(value).__name__}."
+                )
+
+    def _validate_uri(self) -> None:
         """
         Validate the format of the URI field.
         """
@@ -135,23 +189,23 @@ class ParamConfig:
             raise ValueError("The 'uri' must include a valid port.")
         if not parsed_uri.path or parsed_uri.path == "/":
             raise ValueError("The 'uri' must include a database name in the path.")
-            
-    def _validate_network_extension_type(self):
+
+    def _validate_network_extension_type(self) -> None:
         """
         Validate the 'network_extension_type' parameter.
         """
         if not self.network_extension_type:
             return  # Skip validation if network_extension_type is not required
-        
+
         if self.network_extension_type not in {'IMT', 'PT', None}:
             raise ValueError(
                 f"Invalid 'network_extension_type': {self.network_extension_type}\n"
                 "It must be one of: 'IMT', 'PT', or None."
             )
-        
-    def validate_for_class(self, required_fields: list):
+
+    def validate_for_class(self, required_fields: List[str]) -> None:
         """
-        Validates that the specified required fields are present in the ParamConfig object.
+        Validate that the specified required fields are present in the ParamConfig object.
 
         Parameters
         ----------
@@ -167,13 +221,13 @@ class ParamConfig:
         if missing_fields:
             raise ValueError(f"Missing required parameters: {', '.join(missing_fields)}")
 
-    def describe(self):
+    def describe(self) -> None:
         """
-        Displays a summary of the current network configuration.
-    
+        Display a summary of the current network configuration.
+
         Includes parameters such as network number, schema/table names, and connection URI.
         """
-        print("\n🧩 ParamConfig (network settings):")
+        print("\nParamConfig (network settings):")
         print(f" - Network number           : {self.network_number}")
         print(f" - Physical value set       : {self.physical_values_set_number}")
         print(f" - Extension type           : {self.network_extension_type}")
@@ -186,99 +240,79 @@ class ParamConfig:
         print(f" - Print summary            : {self.main_print}")
 
 
+# -----------------------------------------------------------------------------
+# HeatMapConfig
+# -----------------------------------------------------------------------------
 @dataclass
 class HeatMapConfig:
     """
     Configuration container for heatmap generation.
-    
-    This dataclass centralizes all map-related display and export options
-    used by the `HeatMap` class and its associated visualizations. It allows
-    the user to control map appearance, layer visibility, file saving behavior,
-    and popup content selection.
-    
-    Configuration class for controlling map generation and visualization in the `HeatMap` workflow.
-    
-    This class defines all behavior related to how maps are displayed, saved, and annotated. It is
-    designed to be passed as a configuration object to the `HeatMap` class and allows users to customize:
-    - General export behavior (file saving and browser opening)
-    - Map tile and display settings
-    - Layer inclusion (networks, stations)
-    - Choropleth behavior and styles
-    - Popup field selection and styles
-    - Optional metadata (data source notes)
-    
-    Use `HeatMapConfig.describe()` to display a clean summary of current settings.
-    
-    Sections
-    --------
-    🔹 General map and export parameters
-    Controls basic HTML export behavior (file name, output path, browser open).
-    - file_name : str
-        Default name for the exported HTML map file.
-    - save_to_desktop : bool
-        If True, saves the map directly to the user's desktop.
-    - custom_path : str or None
-        Optional custom directory where the map should be saved.
-    - open_browser : bool
-        Whether to open the map in the default web browser after saving.
-    
-    🔹 Map display and tile layers
-    Controls tile background(s), zoom level, and map centering behavior.
-    - map_tiles : List[str]
+
+    This dataclass centralizes all map-related display and export options used by the
+    `HeatMap` class and its associated visualizations. It allows the user to control
+    map appearance, layer visibility, file saving behavior, and popup content selection.
+
+    It is designed to be passed as a configuration object to the `HeatMap` class and
+    allows users to customize:
+        
+      - General export behavior (file saving and browser opening)
+      - Map tile and display settings
+      - Layer inclusion (networks, stations)
+      - Choropleth behavior and styles
+      - Popup field selection and styles
+      - Optional metadata (data source notes)
+
+    **Use ``HeatMapConfig.describe()`` to display a clean summary of current settings.**
+
+    Attributes
+    ----------
+    data_source_note : Optional[str]
+        Optional free-text note (e.g., data sources). Displayed in the info box on the map.
+    map_tiles : List[str]
         List of tile providers to include on the map.
-    - zoom_start : int or None
-        Initial zoom level of the map. If None, uses auto-fit.
-    - location : List[float] or None
-        Fallback map center (lat, lon) if zoom/fit fails.
-    
-    🔹 Layer toggles
-    Allows including transport networks and stations on the map.
-    - include_network_layers : bool
+    zoom_start : int or None
+        Initial zoom level of the map. If ``None``, uses auto-fit.
+    location : Optional[Tuple[float, float]]
+        Fallback map center (lat, lon) if zoom/fit fails. If ``None``, auto-fit is attempted.
+    file_name : Optional[str]
+        Default name for the exported HTML map file.
+    save_to_desktop : bool
+        If ``True``, saves the map directly to the user's desktop.
+    custom_path : Optional[str]
+        Optional custom directory where the map should be saved.
+    open_browser : bool
+        Whether to open the map in the default web browser after saving.
+    include_network_layers : bool
         Whether to display transport network layers.
-    - include_stations : bool
+    include_stations : bool
         Whether to display transport station markers.
-    
-    🔹 Choropleth configuration
-    Controls the color scaling behavior and general styles of the heatmap layers.
-    - thresholds_scale : Dict[str, Dict[str, Any]]
+    thresholds_scale : Dict[str, Dict[str, Union[List[float], str, bool]]]
         Parameters controlling StepColormap appearance for each analysis type.
-    - choropleth_style : Dict[str, Any]
-        Visual styling of filled heatmap layers (opacity, border, etc.)
-    
-    🔹 Popups
-    Controls which database fields appear in interactive map popups and their formatting.
-    - popup_fields : List[str] or bool or None
-        Controls which database fields are shown in popup (see `HeatMap.generate_map()` for rules).
-    - popup_style : Dict[str, Any]
-        Style options for HTML popups (font, overlay, visibility, etc.)
-    - popup_geodata_style : Dict[str, Any]
+    choropleth_style : Dict[str, Union[str, float, int, bool]]
+        Visual styling of filled heatmap layers (opacity, border, overlay/control/show).
+    popup_fields : Union[List[str], bool]
+        Controls which database fields are shown in popup (see ``HeatMap.generate_map()`` for rules).
+    popup_style : Dict[str, Any]
+        Style options for HTML popups (font, overlay, visibility, etc.).
+    popup_geodata_style : Dict[str, Any]
         Base style for the popup’s GeoJson outline.
-    - popup_geodata_highlight : Dict[str, Any]
+    popup_geodata_highlight : Dict[str, Any]
         Hover style applied when the user points to a feature.
-    
-    🔹 Metadata
-    Includes optional free-text notes (e.g., data sources), shown in the info box on the map.
-    - data_source_note : str or None
-        Optional note that describes the source of the input transport data.
-        Displayed in the bottom-left info box on the map.
-    
+
     Notes
     -----
-    - Threshold scales (`thresholds_scale["scale"]`) are computed automatically by `generate_map()` 
-      if left as `None`. You may override them here to apply fixed thresholds.
-    
-    - Default colors (`fill_color`) for each analysis type are stored in:
-        `transnetmap.utils.dct.defaults_thresholds_scale_color`
-    
-    - The following keys in the `choropleth_style` and `popup_style` dictionaries are passed directly 
-      to Folium layers and must follow Folium API:
-        https://python-visualization.github.io/folium/
-    
-    - Use `HeatMapConfig.describe()` to display current settings in a user-friendly summary.
-    
+    - Threshold scales (``thresholds_scale['scale']``) are computed automatically by
+      ``generate_map()`` if left as ``None``. You may override them here to apply fixed thresholds.
+    - Default colors (``fill_color``) for each analysis type are stored in:
+      ``transnetmap.utils.constant.DEFAULT_THRESHOLDS_SCALE_COLOR``.
+    - The keys in ``choropleth_style`` and ``popup_style`` dictionaries are passed directly
+      to Folium layers and must follow the Folium API: <https://python-visualization.github.io/folium/>
+    - Use ``HeatMapConfig.describe()`` to display current settings in a user-friendly summary.
+
     This class does not contain internal logic—it is used only for configuration injection.
-    """  
-    # 🔹 General settings
+    """
+
+    # General settings
     data_source_note: Optional[str] = None  # Appears in top-left map box
     map_tiles: List[str] = field(default_factory=lambda: ["CartoDB Voyager", "OpenStreetMap"])
     zoom_start: int = None
@@ -290,59 +324,69 @@ class HeatMapConfig:
     include_network_layers: bool = True
     include_stations: bool = True
 
-    # 🔹 Choropleth settings
-    thresholds_scale: Dict[str, Dict[str, Union[List[float], str, bool]]] = field(default_factory=lambda: {
-        "time": {"scale": None, "fill_color": None, "reverse_color": None},
-        "length": {"scale": None, "fill_color": None, "reverse_color": None},
-        "changes": {"scale": None, "fill_color": None, "reverse_color": None},
-        "transport_type": {"scale": None, "fill_color": None, "reverse_color": None},
-        "impacts": {"fill_color": None, "reverse_color": None},  # Placeholder for all impacts
-        "difference": {"fill_color": None, "reverse_color": None},  # Placeholder for all differences
-    })
-    
-    choropleth_style: Dict[str, Union[str, float, int, bool]] = field(default_factory=lambda: {
-        "fill_opacity": 0.8,  # Transparency of filled areas
-        "line_color": "black",  # Border color
-        "line_weight": 1,  # Border thickness
-        "line_opacity": 0.2,  # Transparency of borders
-        "smooth_factor": 1,  # Controls smoothing of geometries
-        "overlay": True,  # Determines if the layer is an overlay
-        "control": True,  # Determines if the layer appears in LayerControls
-        "show": False,  # Default visibility of the layer
-    })
+    # Choropleth settings
+    thresholds_scale: Dict[str, Dict[str, Union[List[float], str, bool]]] = field(
+        default_factory=lambda: {
+            "time": {"scale": None, "fill_color": None, "reverse_color": None},
+            "length": {"scale": None, "fill_color": None, "reverse_color": None},
+            "changes": {"scale": None, "fill_color": None, "reverse_color": None},
+            "transport_type": {"scale": None, "fill_color": None, "reverse_color": None},
+            "impacts": {"fill_color": None, "reverse_color": None},       # Placeholder for all impacts
+            "difference": {"fill_color": None, "reverse_color": None},    # Placeholder for all differences
+        }
+    )
 
-    # 🔹 Popup settings
-    popup_fields: Union[List[str], bool] = None  # Optional: Defines which columns to include in popups (with aliases).
+    choropleth_style: Dict[str, Union[str, float, int, bool]] = field(
+        default_factory=lambda: {
+            "fill_opacity": 0.8,     # Transparency of filled areas
+            "line_color": "black",   # Border color
+            "line_weight": 1,        # Border thickness
+            "line_opacity": 0.2,     # Transparency of borders
+            "smooth_factor": 1,      # Controls smoothing of geometries
+            "overlay": True,         # Determines if the layer is an overlay
+            "control": True,         # Determines if the layer appears in LayerControls
+            "show": False,           # Default visibility of the layer
+        }
+    )
 
-    popup_style: Dict[str, Any] = field(default_factory=lambda: {
-        "name": "Data popup", # Name of the layer
-        "overlay": True,  # Determines if the layer is an overlay
-        "control": True,  # Determines if the layer appears in LayerControls
-        "show": False,  # Default visibility of the layer
-        "html_fields": "color: #333333; font-family: arial; font-size: 11px; padding: 10px;"
-    })
-    
-    popup_geodata_style: Dict[str, Any] = field(default_factory=lambda: {
-        "fillColor": "#ffffff",
-        "color": "#000000",
-        "fillOpacity": 0.1,
-        "weight": 0.1,
-    })
-    
-    popup_geodata_highlight: Dict[str, Any] = field(default_factory=lambda: {
-        "fillColor": "#000000",
-        "color": "#000000",
-        "fillOpacity": 0.3,
-        "weight": 0.1,
-    })
+    # Popup settings
+    popup_fields: Union[List[str], bool] = None  # Defines which columns to include in popups (with aliases).
 
-    def describe(self):
+    popup_style: Dict[str, Any] = field(
+        default_factory=lambda: {
+            "name": "Data popup",  # Name of the layer
+            "overlay": True,       # Determines if the layer is an overlay
+            "control": True,       # Determines if the layer appears in LayerControls
+            "show": False,         # Default visibility of the layer
+            "html_fields": "color: #333333; font-family: arial; font-size: 11px; padding: 10px;",
+        }
+    )
+
+    popup_geodata_style: Dict[str, Any] = field(
+        default_factory=lambda: {
+            "fillColor": "#ffffff",
+            "color": "#000000",
+            "fillOpacity": 0.1,
+            "weight": 0.1,
+        }
+    )
+
+    popup_geodata_highlight: Dict[str, Any] = field(
+        default_factory=lambda: {
+            "fillColor": "#000000",
+            "color": "#000000",
+            "fillOpacity": 0.3,
+            "weight": 0.1,
+        }
+    )
+
+    def describe(self) -> None:
         """
-        Displays a summary of the heatmap configuration (excluding visual styles).
-    
+        Display a summary of the heatmap configuration (excluding visual styles).
+
         Includes map behavior options, export settings, and data field controls.
         """
-        print("\n🗺️ HeatMapConfig:")
+        print("\nHeatMapConfig:")
         print(f" - file_name             : {self.file_name}")
         print(f" - save_to_desktop       : {self.save_to_desktop}")
         print(f" - custom_path           : {self.custom_path or 'None'}")
@@ -355,21 +399,22 @@ class HeatMapConfig:
         print(f" - popup_fields          : {self.popup_fields}")
         print(f" - data_source_note      : {self.data_source_note or 'None'}")
         print(f" - thresholds_scale keys : {list(self.thresholds_scale.keys())}")
-        
-        print("\nℹ️  Thresholds:")
+
+        print("\nThresholds:")
         print("   - Threshold scales (`scale`) are computed automatically by `generate_map()` if left as `None`.")
         print("   - You can override them here to use fixed thresholds per analysis type.")
-        
-        print("\nℹ️  Default colors:")
+
+        print("\nDefault colors:")
         print("   - Default `fill_color` values for each analysis type are stored in:")
-        print("     `transnetmap.utils.dct.defaults_thresholds_scale_color`")
+        print("     `transnetmap.utils.constant.DEFAULT_THRESHOLDS_SCALE_COLOR`")
 
         print("\nStyling keys follow Folium API. See: https://python-visualization.github.io/folium/")
 
 
-# ===========================
+# -----------------------------------------------------------------------------
+# Example usage (no side effects at import time)
+# -----------------------------------------------------------------------------
 if __name__ == "__main__":
-
     # Complete dictionary of creation and calculation parameters
     dct_param = {
         "network_number": 4,
@@ -386,18 +431,14 @@ if __name__ == "__main__":
 
     # Define required fields for Links
     required_fields = ["network_number", "main_print", "network_extension_type"]
-    
-    # Create a ParamConfig instance  
+
+    # Create a ParamConfig instance
     config_net = ParamConfig(**dct_param, required_fields=required_fields)
-    
-    # # Validate parameters
+
+    # Validate parameters
     config_net.validate()
-    
     config_net.describe()
-    
-    # ===========================
-    
+
+    # HeatMap configuration example
     config_hm = HeatMapConfig()
     config_hm.describe()
-    
-    

@@ -4,18 +4,28 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "transnetmap-impacts"            # INSTALL name
-version = "1.0.1"
+version = "1.1.0"
 description = "Macro-scale analysis of new transport networks vs existing ones, with impact heatmaps."
 readme = "README.md"
 requires-python = ">=3.11"
-authors = [{ name = "Valentin Pasche", email = "valentin.pasche@etml-es.ch" }]
-license = { text = "TBD" }
+license = { file = "LICENSE" }
+authors = [{ name = "Valentin Pasche"}]
 # keep empty because libs are manage via conda-forge
 dependencies = []
 
+classifiers = [
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3.12",
+  "Intended Audience :: Science/Research",
+  "Topic :: Scientific/Engineering :: GIS",
+]
+
 [project.urls]
-Homepage = "https://github.com/valentinpasche/transnetmap-impacts"
-Issues   = "https://github.com/valentinpasche/transnetmap-impacts/issues"
+Homepage = "https://transnetmap-impacts.readthedocs.io"
+Documentation = "https://transnetmap-impacts.readthedocs.io"
+Repository = "https://github.com/valentinpasche/transnetmap-impacts"
+Issues = "https://github.com/valentinpasche/transnetmap-impacts/issues"
+Changelog = "https://github.com/valentinpasche/transnetmap-impacts/releases"
 
 [tool.setuptools]
 package-dir = {"" = "src"}              # look for packages under src/

@@ -1,0 +1,117 @@
+site_name: transnetmap-impacts
+site_description: Macro-scale transport network impacts and mapping (CO2, EP, TCO) with choropleths.
+site_url: https://transnetmap-impacts.readthedocs.io/
+repo_name: valentinpasche/transnetmap-impacts
+repo_url: https://github.com/valentinpasche/transnetmap-impacts
+
+copyright: Copyright &copy; 2025 - Valentin Pasche
+
+theme:
+  name: material
+  language: en
+  logo: assets/logo-dark.png
+  favicon: assets/favicon.png
+  icon:
+    repo: fontawesome/brands/github
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.instant
+    - content.code.copy
+  palette:
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/link
+        name: Switch to light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/toggle-switch
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: black
+      accent: indigo
+      toggle:
+        icon: material/toggle-switch-off
+        name: Switch to system preference
+  font:
+    text: Roboto
+    code: Roboto Mono
+
+nav:
+  - Home: index.md
+  - Installation: installation.md
+  - Get Started: get_started.md
+  - Examples: examples.md
+  - API Reference:
+      - api/index.md
+      - transnetmap.pre:
+          - api/pre/index.md
+          - pre.NPTM: api/pre/nptm/NPTM.md
+          - pre.Stations: api/pre/network_child/Stations.md
+          - pre.Links: api/pre/network_child/Links.md
+          - pre.Network: api/pre/network/Network.md
+          - pre.PVS_TravelTime: api/pre/pvs/PVS_TravelTime.md
+          - pre.PVS_Impacts: api/pre/pvs/PVS_Impacts.md
+      - transnetmap.analysis:
+          - api/analysis/index.md
+          - analysis.Graph: api/analysis/graph/Graph.md
+          - analysis.time_functions: api/analysis/time_functions.md
+          - analysis.edgelist.EdgeList: api/analysis/edgelist/EdgeList.md
+      - transnetmap.post:
+          - api/post/index.md
+          - post.HeatMap: api/post/heatmap/HeatMap.md
+          - post.results.Results: api/post/results/Results.md
+      - transnetmap.utils:
+          - api/utils/index.md
+          - utils.config:
+              - api/utils/config.md
+              - utils.ParamConfig: api/utils/ParamConfig.md
+              - utils.HeatMapConfig: api/utils/HeatMapConfig.md
+          - utils.constant: api/utils/constant.md
+          - utils.map: api/utils/map.md
+          - utils.scale: api/utils/scale.md
+          - utils.sql: api/utils/sql.md
+          - utils.time_tools: api/utils/time_tools.md
+          - utils.utils: api/utils/utils.md
+  - License: license.md
+  - Development: development.md
+
+plugins:
+  - search
+  - autorefs
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [src]
+          options:
+            docstring_style: numpy
+            show_signature: true
+            separate_signature: true
+            show_source: true
+            show_submodules: true
+            members_order: source
+            inherited_members: true
+            merge_init_into_class: true
+            filters:
+              - "!^_"         # excludes “private” members...
+  - include-markdown:
+      rewrite_relative_urls: true
+  - section-index
+
+markdown_extensions:
+  - admonition
+  - tables
+  - toc:
+      permalink: true
+      toc_depth: 3
+  - pymdownx.snippets
+
+extra_css:
+  - assets/extra.css
+
+watch:
+  - src

@@ -1,24 +1,27 @@
 # DESIGN — transnetmap-impacts
 
-## 📁 Organisation du package - version 1.0.1
+## 📁 Package organization - version 1.1.0
 
 ```text
 transnetmap-impacts/
-├── LICENSE
-├── README.md
-├── environment-dev.yml
-├── environment.yml
-├── pyproject.toml
+├── .gitignore
+├── .readthedocs.yaml
 ├── DESIGN.md
+├── environment.yml
+├── environment-dev.yml
+├── LICENSE
+├── mkdocs.yml
+├── pyproject.toml
+├── README.md
+├── docs/
+│   ├── api/
+│   ├── assets/
+│   ├── examples/
+│   ├── ... # Markdown files
+│   └── requirements-docs.txt
 ├── src/
 │   └── transnetmap/
 │       ├── __init__.py
-│       ├── pre/
-│       │   ├── __init__.py
-│       │   ├── network.py
-│       │   ├── network_child.py
-│       │   ├── nptm.py
-│       │   └── pvs.py
 │       ├── analysis
 │       │   ├── __init__.py
 │       │   ├── edgelist.py
@@ -28,21 +31,28 @@ transnetmap-impacts/
 │       │   ├── __init__.py
 │       │   ├── results.py
 │       │   └── heatmap.py
+│       ├── pre/
+│       │   ├── __init__.py
+│       │   ├── network.py
+│       │   ├── network_child.py
+│       │   ├── nptm.py
+│       │   └── pvs.py
 │       └── utils/
 │           ├── __init__.py
 │           ├── config.py
-│           ├── dct.py
-│           ├── map_utils.py
-│           ├── scale_utils.py
+│           ├── constant.py
+│           ├── map.py
+│           ├── scale.py
 │           ├── sql.py
-│           ├── time_utils.py
+│           ├── time.py
 │           └── utils.py
-└── tests/ -> in progress (but maybe do that for V2)
-    ├── datasets/
-    ├── add_time_function.py
-    ├── test_import_time_function.py
-    ├── test_pre.py
-    ├── test_analysis.py
-    ├── test_results.py
-    └── test_nptm_import.py #TODO -> NotImplementedError
+└── tests/ -> in progress
+    ├── get_started/
+    │   ├── inputs/
+    │   ├── outputs/
+    │   └── get_started.py
+    ├── setup_raw_data_before_NPTM.py
+    ├── add_time_function.py # TODO
+    ├── test_import_time_function.py # TODO
+    └── ...
 ```

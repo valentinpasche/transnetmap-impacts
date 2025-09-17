@@ -1,75 +1,85 @@
 # -*- coding: utf-8 -*-
-
 """
-Module: time_functions
+Time calculation functions for network analysis.
 
-This module contains time calculation functions for network analysis. It serves as a repository for predefined 
-and user-defined travel time calculation functions. Each function calculates the travel time for a link 
-based on its length and other parameters, such as speed and acceleration.
+This module serves as a repository of predefined and user-defined **travel time** functions.
 
+Each function computes travel time for a link based on its length and kinematic parameters.
+
+Notes
+-----
+- All time functions must have the signature
+
+    (distance, v_max, acceleration, deceleration) -> float
+
+  where:
+      
+  - ``distance`` is in meters,
+  - ``v_max`` is the maximum speed in km/h,
+  - ``acceleration`` and ``deceleration`` are in m/s²,
+  - The return value is the travel time in **minutes**.
+
+Module attributes
+-----------------
+TIME_FUNCTION_REGISTERY : dict[str, TimeFunction]
+
+    Dictionary mapping function names to callables available for import.
+
+Examples
+--------
+Define a function and register it:
+
+>>> def my_time_function(
+            distance: float,
+            v_max: float,
+            acceleration: float,
+            deceleration: float
+    ) -> float:
+        time = distance / (v_max / 3.6) / 60
+        return time  # minutes
+
+>>> from transnetmap.utils.time_tools import register_time_function`, import_time_function
+
+>>> register_time_function(my_time_function, "my_time_function")
+
+Use the newly recorded function: 
+
+>>> fn = import_time_function("my_time_function")
+
+>>> fn(distance=1000, v_max=50, acceleration=1.0, deceleration=1.0)  # 1/3 minute
+    
 Features:
----------
-1. Predefined functions for common travel time calculations (e.g., SUARM).
-2. Support for custom user-defined functions, which can be dynamically registered and validated.
-3. Centralized registry (`time_function_registry`) to manage available functions.
+
+- Predefined travel-time models (e.g. *SUARM* → `suarm`).
+- Support for custom, user-defined functions.
+- Central registry ``TIME_FUNCTION_REGISTERY`` to list available functions.
 
 Guidelines:
------------
-- Define your function to calculate travel time based on **4 required parameters**:
-    1. `distance` : float (Length of the link in meters).
-    2. `v_max` : float (Maximum speed in km/h).
-    3. `acceleration` : float (Acceleration in m/s²).
-    4. `deceleration` : float (Deceleration in m/s²).
-- You must define all 4 parameters in your function's signature, even if some are unused.
-- The output travel time must be in **minutes** (float).
-- Ensure your function is deterministic and well-documented for consistency and reproducibility.
 
-Function Format:
-----------------
-All functions must conform to the following signature:
-    def function_name(distance: float, v_max: float, acceleration: float, deceleration: float) -> float:
-        - `distance` : The length of the link [meters].
-        - `v_max` : Maximum speed [km/h].
-        - `acceleration` : Acceleration [m/s²].
-        - `deceleration` : Deceleration [m/s²].
-        - Returns a float representing the travel time [minutes].
-
-Example:
---------
-Define your function:
-    def my_time_function(distance: float, v_max: float, acceleration: float, deceleration: float) -> float:
-        return distance / v_max / 60  # Example logic for calculating travel time
-
-Register your function:
-    from transnetmap.utils.time_utils import register_time_function
-    register_time_function(my_time_function, "my_time_function")
-
-Test the function dynamically:
-    from transnetmap.utils.time_utils import import_time_function
-    time_function = import_time_function("my_time_function")
-    travel_time = time_function(distance=1000, v_max=50, acceleration=1.0, deceleration=1.0)  # Result: 20.0 minutes
-
-Registry:
----------
-The module includes a central `time_function_registry` dictionary, which holds all registered functions.
-    time_function_registry = {
-        "suarm": suarm,
-        "my_custom_time_function": my_custom_time_function,
-        ...
-    }
-
-Notes:
-------
-- The `time_function_registry` ensures that all functions are accessible dynamically for import and use.
-- Users should ensure their functions are deterministic and properly tested before adding them to the registry.
-- This module supports extensibility for custom user needs while maintaining compatibility with the network analysis framework.
+- Signature (strict): ``(distance, v_max, acceleration, deceleration) -> float``.
+- Units: ``distance`` in meters; ``v_max`` in km/h; ``acceleration``/``deceleration`` in m/s².
+- Return value: **minutes** (recommended rounding: 1 decimal).
+- Functions should be pure (no side effects, no I/O).
+- Use `transnetmap.utils.time_tools.validate_time_function` to check a function’s signature.
+- Use `transnetmap.utils.time_tools.register_time_function` to register a function.
+- Retrieve by name with `transnetmap.utils.time_tools.import_time_function`.
 """
 
-# Import necessary modules
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Dict
+
 import numpy as np
 
+if TYPE_CHECKING:  # noqa: F401
+    from transnetmap.utils.time_tools import TimeFunction
+    
+__all__ = ["my_custom_time_function", "suarm", "TIME_FUNCTION_REGISTERY"]
 
+
+# -----------------------------------------------------------------------------
 # Example custom time function
+# -----------------------------------------------------------------------------
 def my_custom_time_function(distance: float, v_max: float, acceleration: float, deceleration: float) -> float:
     """
     Example custom time function for testing.
@@ -92,33 +102,32 @@ def my_custom_time_function(distance: float, v_max: float, acceleration: float, 
     """
     # Simple calculation using only distance and speed
     travel_time = distance / (v_max / 3.6) / 60  # Convert speed to m/s and calculate time in minutes
-    return round(travel_time, 1)  # Round to 1 decimal place    
+    return round(travel_time, 1)  # Round to 1 decimal place
 
 
-def suarm(distance: float, v_max: int, acceleration: float, deceleration: float) -> float:
+# -----------------------------------------------------------------------------
+# SUARM (Symmetrical Uniformly Accelerated Rectilinear Motion)
+# -----------------------------------------------------------------------------
+def suarm(distance: float, v_max: float, acceleration: float, deceleration: float) -> float:
     """
-    Calculates travel time based on SUARM (Symmetrical Uniformly Accelerated Rectilinear Motion).
-    
-    This function computes the travel time for a link based on the given distance, 
-    maximum speed, acceleration and deceleration.
+    Calculate travel time based on SUARM (Symmetrical Uniformly Accelerated Rectilinear Motion).
 
     Parameters
     ----------
     distance : float
         Length of the section [m].
-    v_max : int
+    v_max : float
         Maximum speed, constant speed [km/h].
     acceleration : float
         Average constant acceleration [m/s²].
     deceleration : float
         Average constant deceleration [m/s²].
 
-
     Returns
     -------
     float
         Total travel time [min].
-    
+
     Notes
     -----
     - The input distance should be in meters.
@@ -143,9 +152,11 @@ def suarm(distance: float, v_max: int, acceleration: float, deceleration: float)
     return round(total_time / 60, 1)  # [min]
 
 
-# Add your custom functions here and register them in the registry below.
-time_function_registry = {
-    "my_custom_time_function": my_custom_time_function, # Example function in the registry
-    "suarm": suarm
+# -----------------------------------------------------------------------------
+# Registry
+# -----------------------------------------------------------------------------
+TIME_FUNCTION_REGISTERY: Dict[str, TimeFunction] = {
+    "my_custom_time_function": my_custom_time_function,  # Example function in the registry
+    "suarm": suarm,
 }
-
+"""Registry of time functions keyed by name."""

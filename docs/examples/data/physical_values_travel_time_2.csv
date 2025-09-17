@@ -1,0 +1,20 @@
+name;value;unit;description;comments
+tf_name;suarm;-;python time function name;Symmetrical Uniformly Accelerated Rectilinear Motion
+l_ff;1.15;-;lower fractal factor;
+m_ff;1.15;-;main fractal factor;
+h_ff;1.15;-;higher fractal factor;
+l_a_it;3;min;lower start interface time;
+l_b_it;3;min;lower end interface time;
+m_a_it;3;min;main start interface time;
+m_b_it;3;min;main end interface time;
+h_a_it;3;min;higher start interface time;
+h_b_it;3;min;higher end interface time;
+l_aa;0.65;m/s2;lower average acceleration;
+l_ad;0.65;m/s2;lower average dceleration;
+m_aa;0.65;m/s2;main average acceleration;
+m_ad;0.65;m/s2;main average dceleration;
+h_aa;0.65;m/s2;higher average acceleration;
+h_ad;0.65;m/s2;higher average dceleration;
+l_ts;75;km/h;lower top speed;
+m_ts;300;km/h;main top speed;
+h_ts;500;km/h;higher top speed;

@@ -1,0 +1,9 @@
+type;max_distance;impact_type;impact_value;impact_unit;motorization;load_percent;description;comments;sources
+IMT;-;CO2;186;g CO2-eq / pkm;average;32;average fleet of passenger cars;distance independent, g CO2 equivalent per person km;mobitools-v3.0-20240425 (www.mobitool.ch)
+PT;4;CO2;90.5;g CO2-eq / pkm;diesel;13;articulated urban bus (18m);g CO2 equivalent per person km;mobitools-v3.0-20240425 (www.mobitool.ch)
+PT;15;CO2;25.4;g CO2-eq / pkm;average;-;public transport average;g CO2 equivalent per person km;mobitools-v3.0-20240425 (www.mobitool.ch)
+PT;50;CO2;8;g CO2-eq / pkm;electric;22;swiss train, regional traffic;g CO2 equivalent per person km;mobitools-v3.0-20240425 (www.mobitool.ch)
+PT;-;CO2;6.8;g CO2-eq / pkm;electric;33;swiss train, long distance;g CO2 equivalent per person km;mobitools-v3.0-20240425 (www.mobitool.ch)
+NTS-lower;-;CO2;61.5;g CO2-eq / pkm;electric;33;new transport system, lower;g CO2 equivalent per person km;HES-SO GRIPIT project, @Florian_Davoine, 1st order estimate
+NTS-main;-;CO2;65.8;g CO2-eq / pkm;electric;33;new transport system, main;g CO2 equivalent per person km;HES-SO GRIPIT project, @Florian_Davoine, 1st order estimate
+NTS-higher;-;CO2;132;g CO2-eq / pkm;electric;33;new transport system, higher;g CO2 equivalent per person km;HES-SO GRIPIT project, @Florian_Davoine, 1st order estimate
