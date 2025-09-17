@@ -12,10 +12,17 @@
 
 <!-- docs:start -->
 
+[![Docs (stable)](https://img.shields.io/readthedocs/transnetmap-impacts/stable?label=Read%20the%20Docs)](https://transnetmap-impacts.readthedocs.io/en/stable/)
+[![Docs (latest)](https://img.shields.io/readthedocs/transnetmap-impacts/latest?label=Docs%20latest)](https://transnetmap-impacts.readthedocs.io/en/latest/)
+[![GitHub release](https://img.shields.io/github/v/release/valentinpasche/transnetmap-impacts)](https://github.com/valentinpasche/transnetmap-impacts/releases)
+![Python](https://img.shields.io/badge/python-3.12-blue)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
+
 **A Python package for macro-scale analysis of new transport networks vs existing ones with impacts choropleth maps.**
 
 - GitHub repo: <https://github.com/valentinpasche/transnetmap-impacts>
-- Documentation: <https://transnetmap-impacts.readthedocs.io/en/stable/>
+- Documentation: <https://transnetmap-impacts.readthedocs.io>
 - Free software: [MIT license](https://opensource.org/licenses/MIT)
 
 ## Introduction
@@ -63,13 +70,14 @@ python -c "import transnetmap as tnm; print('OK:', tnm.__name__)"
 
 The complete user guide (workflow overview, Western Switzerland quickstart, API reference via `mkdocstrings`) will be published on **Read the Docs**:
 
-- **Read the Docs :** <https://transnetmap-impacts.readthedocs.io/en/stable/>
+**Read the Docs:** <https://transnetmap-impacts.readthedocs.io/en/stable/>  
+For the latest docs, see: <https://transnetmap-impacts.readthedocs.io/en/latest/>
 
 Planned structure (mirrors the style of well-known scientific Python projects):
 
 - **Overview** – purpose, scope, key concepts
-- **Get Started** – 6-step pipeline (load network, build graph, run Dijkstra, compute impacts, map)
-- **Full workflow (PostGIS)** – schema, example queries, configuration (`ParamConfig`), reproducible outputs
+- **Get Started** – 5-step pipeline (load datasets, configure settings, build new network, run Dijkstra, generate map)
+- **Full workflow (PostGIS)** – schema, example queries, configuration (`HeatMapConfig`), reproducible outputs
 - **Examples** – notebooks (viewable via nbviewer), exported HTML maps
 - **API Reference** – generated from docstrings (NumPy style)
 
