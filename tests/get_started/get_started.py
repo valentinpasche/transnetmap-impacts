@@ -39,7 +39,7 @@ config = ParamConfig(**{
     "db_zones_table": "zones",
     "db_imt_table": "imt",
     "db_pt_table": "pt",
-    "uri": "postgresql://username:password@host:5432/gripit_DB",
+    "uri": "postgresql://username:password@host:port/database",
 })
 
 

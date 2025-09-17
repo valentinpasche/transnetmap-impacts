@@ -95,7 +95,7 @@ class ParamConfig:
         times and distances. Used in NPTM-related computations and post-processing.
     uri : Optional[str]
         Connection string for the PostgreSQL database, formatted as
-        ``postgresql://user:password@host:port/database``. This is required for any
+        ``postgresql://username:password@host:port/database``. This is required for any
         database interaction.
     main_print : bool
         Controls whether general execution information should be printed to the
