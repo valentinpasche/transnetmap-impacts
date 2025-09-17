@@ -1,6 +1,6 @@
 site_name: transnetmap-impacts
 site_description: Macro-scale transport network impacts and mapping (CO2, EP, TCO) with choropleths.
-site_url: https://transnetmap-impacts.readthedocs.io/
+site_url: https://transnetmap-impacts.readthedocs.io/en/stable
 repo_name: valentinpasche/transnetmap-impacts
 repo_url: https://github.com/valentinpasche/transnetmap-impacts
 

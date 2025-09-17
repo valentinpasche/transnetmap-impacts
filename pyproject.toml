@@ -21,8 +21,8 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://transnetmap-impacts.readthedocs.io"
-Documentation = "https://transnetmap-impacts.readthedocs.io"
+Homepage = "https://transnetmap-impacts.readthedocs.io/en/stable"
+Documentation = "https://transnetmap-impacts.readthedocs.io/en/stable"
 Repository = "https://github.com/valentinpasche/transnetmap-impacts"
 Issues = "https://github.com/valentinpasche/transnetmap-impacts/issues"
 Changelog = "https://github.com/valentinpasche/transnetmap-impacts/releases"

@@ -15,7 +15,7 @@
 **A Python package for macro-scale analysis of new transport networks vs existing ones with impacts choropleth maps.**
 
 - GitHub repo: <https://github.com/valentinpasche/transnetmap-impacts>
-- Documentation: <https://transnetmap-impacts.readthedocs.io/>
+- Documentation: <https://transnetmap-impacts.readthedocs.io/en/stable/>
 - Free software: [MIT license](https://opensource.org/licenses/MIT)
 
 ## Introduction
@@ -63,7 +63,7 @@ python -c "import transnetmap as tnm; print('OK:', tnm.__name__)"
 
 The complete user guide (workflow overview, Western Switzerland quickstart, API reference via `mkdocstrings`) will be published on **Read the Docs**:
 
-- **Read the Docs (in progress):** https://transnetmap-impacts.readthedocs.io
+- **Read the Docs (in progress):** <https://transnetmap-impacts.readthedocs.io/en/stable/>
 
 Planned structure (mirrors the style of well-known scientific Python projects):
 
