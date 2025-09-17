@@ -1,4 +1,5 @@
 
+{% include-markdown "../README.md" start="<!-- badges:start -->" end="<!-- badges:end -->" %}
 
 <p align="center">
   <img src="assets/logo-light.png" alt="transnetmap-impacts logo" width="420" class="only-light">
