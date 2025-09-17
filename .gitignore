@@ -1,6 +1,6 @@
-# Python
+# Python cache
 __pycache__/
-*.py
+*.pyc
 *.pyo
 *.pyd
 
@@ -9,10 +9,10 @@ build/
 dist/
 *.egg-info/
 
-# MkDocs
+# MkDocs output
 site/
 
-# Tests / tooling
+# Tests / tooling caches
 .pytest_cache/
 .coverage
 htmlcov/
@@ -24,7 +24,7 @@ htmlcov/
 .idea/
 .DS_Store
 
-# Environnements
+# Environments
 .venv/
 venv/
 env/
