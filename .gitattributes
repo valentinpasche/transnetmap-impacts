@@ -1,1 +1,5 @@
 docs/** linguist-documentation
+tests/** linguist-documentation
+
+docs/examples/**/*.html linguist-generated
+tests/**/*.html          linguist-generated
