@@ -6,3 +6,9 @@
 </p>
 
 {% include-markdown "../README.md" start="<!-- docs:start -->" end="<!-- docs:end -->" %}
+
+---
+
+## License
+
+This project is licensed under the **MIT License**. See the [License page](license/) file for details.

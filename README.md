@@ -63,7 +63,7 @@ python -c "import transnetmap as tnm; print('OK:', tnm.__name__)"
 
 The complete user guide (workflow overview, Western Switzerland quickstart, API reference via `mkdocstrings`) will be published on **Read the Docs**:
 
-- **Read the Docs (in progress):** <https://transnetmap-impacts.readthedocs.io/en/stable/>
+- **Read the Docs :** <https://transnetmap-impacts.readthedocs.io/en/stable/>
 
 Planned structure (mirrors the style of well-known scientific Python projects):
 
@@ -97,12 +97,6 @@ While the documentation illustrates the workflow on a **Switzerland** case study
 
 ---
 
-## License
-
-This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.
-
----
-
 ## Support
 
 Found a bug, or have a feature request, raise an issue on the
@@ -121,3 +115,10 @@ Alternatively you can get support on the
 
 
 <!-- docs:end -->
+
+---
+
+## License
+
+This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.
+
