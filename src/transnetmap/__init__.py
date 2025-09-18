@@ -14,4 +14,4 @@ from __future__ import annotations
 __all__ = ["pre", "analysis", "post", "__version__"]
 
 # Optional version placeholder; replace at build time if needed
-__version__ = "1.1.0"
+__version__ = "1.1.1"

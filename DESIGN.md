@@ -1,6 +1,6 @@
 # DESIGN — transnetmap-impacts
 
-## 📁 Package organization - version 1.1.0
+## 📁 Package organization - version 1.1.1
 
 ```text
 transnetmap-impacts/

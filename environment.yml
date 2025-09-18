@@ -22,8 +22,8 @@ dependencies:
   - jenkspy
   - pip
   - pip:
-      # Installs the package (non-editable) from GitHub at tag v1.1.0
-      - https://github.com/valentinpasche/transnetmap-impacts/archive/refs/tags/v1.1.0.zip
+      # Installs the package (non-editable) from GitHub at tag v1.1.1
+      - https://github.com/valentinpasche/transnetmap-impacts/archive/refs/tags/v1.1.1.zip
 
 # Requires a PostgreSQL database with the PostGIS extension enabled.
 
