@@ -213,30 +213,26 @@ class EdgeList:
         Returns
         -------
         self : EdgeList
-            The updated EdgeList instance with the following attributes:
-                
-            - `self.edgelist` (polars.DataFrame): A Polars DataFrame containing the edge list.
-              Sorted by 'from', 'to', and the optimisation metric ('time').
+            The updated EdgeList instance with the following attributes :
               
-              Columns:
-                  
-                - 'from', 'to': int16 (node identifiers)
-                - 'type': int8 (edge type, mapped from level)
-                - 'time': float32 (travel time in minutes)
-                - 'length': float32 (edge length in kilometers)
+            - `self.edgelist` :`polars.DataFrame`  
+              A Polars DataFrame containing the edge list.  
+              Sorted by `'from'`, `'to'`, and the optimisation metric (`'time'`).  
+              Columns :  
+                - `'from'`, `'to'`: `int16` (node identifiers)
+                - `'type'`: `int8` (edge type, mapped from level)
+                - `'time'`: `float32` (travel time in minutes)
+                - `'length'`: `float32` (edge length in kilometers)
                 
-            - `self.irrelevant` (bool or pandas.DataFrame):
-                
-                - If False, all edges in the new network are relevant compared to the NPTM edges.
-                - If a DataFrame, it contains edges from the new network that are longer in travel time
+            - `self.irrelevant` : `bool` or `pandas.DataFrame`  
+                - If `False`, all edges in the new network are relevant compared to the NPTM edges.
+                - If `pd.DataFrame`, it contains edges from the new network that are longer in travel time
                   than corresponding edges from the NPTM database.
-                  
-                Columns:
-                    
-                  - 'from', 'to': int16 (node identifiers)
-                  - 'network_type', 'nptm_type': str (edge type, mapped from transport type)
-                  - 'network_time', 'nptm_time': float32 (travel time in minutes)
-                  - 'network_length', 'nptm_length': float32 (edge length in kilometers)
+                - Columns :
+                    - `'from'`, `'to'`: `int16` (node identifiers)
+                    - `'network_type'`, `'nptm_type'`: `str` (edge type, mapped from transport type)
+                    - `'network_time'`, `'nptm_time'`: `float32` (travel time in minutes)
+                    - `'network_length'`, `'nptm_length'`: `float32` (edge length in kilometers)
     
         Raises
         ------
@@ -246,28 +242,28 @@ class EdgeList:
         Notes
         -----
         - The method processes the network data and maps physical values (e.g., speed, acceleration)
-          based on the edge level (e.g., 'lower', 'main', 'higher') and PVS parameters.
+          based on the edge level (e.g., `'lower'`, `'main'`, `'higher'`) and `PVS` parameters.
         - Additional edges from the NPTM are filtered based on specific conditions:
-            - Edges must connect nodes within the new network ('from' or 'to' is in the network).
-            - Self-loops ('from' = 'to') are excluded.
+            - Edges must connect nodes within the new network (`'from'` or `'to'` is in the network).
+            - Self-loops (`'from' = 'to'`) are excluded.
             - Only edges of the specified transport type (IMT or PT) are included.
         - After combining network and NPTM edges, duplicates are resolved by keeping the shortest
-          travel time for each pair of nodes. The optimisation metric is always set to 'time'.
+          travel time for each pair of nodes. The optimisation metric is always set to `'time'`.
     
         Filters Applied
         ---------------
         1. **Network edges**:
             - Physical values (e.g., speed, acceleration) are mapped based on edge level.
-            - Edge length is adjusted using a fractal factor from PVS.
+            - Edge length is adjusted using a fractal factor from `PVS`.
             - Travel time is calculated using a user-defined function.
     
         2. **NPTM edges**:
             - Edges must connect nodes in the new network.
             - Self-loops are excluded.
-            - Only edges with the specified transport type ('IMT' or 'PT') are included.
+            - Only edges with the specified transport type (`'IMT'` or `'PT'`) are included.
     
         3. **Combined edge list**:
-            - Duplicates (edges with the same 'from' and 'to') are resolved by keeping the fastest connection.
+            - Duplicates (edges with the same `'from'` and `'to'`) are resolved by keeping the fastest connection.
     
         Examples
         --------
@@ -601,7 +597,7 @@ class EdgeList:
         -----
         - The function ensures that the schema and table are created only if they do not already exist.
         - The `adbc` engine is used for optimal writing performance with Polars DataFrames.
-        - Adds a composite primary key on the columns ["from", "to"].
+        - Adds a composite primary key on the columns `["from", "to"]`.
         - The schema is structured as follows:
             - **Schema name**: Defined by the **network number (`network_number`)**, **physical values set (`physical_values_set_number`)**, 
               **transport extension type (`network_extension_type`)**, and the **source schema (`db_nptm_schema`)**.
@@ -613,21 +609,21 @@ class EdgeList:
     
         Examples
         --------
-        # Define the schema comment explaining its purpose and structure
+        ## Define the schema comment explaining its purpose and structure
         
         >>> com_schema_results = f'''
-        The tables in this schema contain the results of optimising the new network {`network_number`}
-        using the physical parameters "pvs{`physical_values_set_number`}".
-        The source data comes from NPTM in Switzerland (schema {`db_nptm_schema`}),
-        and the transport type used for extension is "{`network_extension_type`}".
-        '''
+        ... The tables in this schema contain the results of optimising the new network {`network_number`} 
+        ... using the physical parameters "pvs{`physical_values_set_number`}".
+        ... The source data comes from NPTM in Switzerland (schema {`db_nptm_schema`}), 
+        ... and the transport type used for extension is "{`network_extension_type`}".
+        ... '''
     
-        # Write the edgelist to the database
+        ## Write the edgelist to the database
         
         >>> edgelist.to_sql_edgelist(
-                comment_schema=com_schema_results, 
-                if_exists='replace'
-            )
+        ...     comment_schema=com_schema_results, 
+        ...     if_exists='replace'
+        ... )
         """
         from transnetmap.utils.sql import define_schema, schema_exists, execute_primary_key_script
         from transnetmap.utils.constant import IMPACTS
@@ -718,7 +714,7 @@ class EdgeList:
         Parameters
         ----------
         columns : list of str, optional
-            List of column names to select. If None, selects all columns (*).
+            List of column names to select. If None, selects all columns (`'*'`).
             Default is None.
         where_condition : str, optional
             SQL WHERE clause to filter the rows. If None, no filtering is applied.

@@ -134,13 +134,15 @@ class Results:
     -------------
     **Using HeatMap() for a single zone**
     
-    `heatmap = HeatMap(config, id_zone=123, zone_label="label", from_zome=True)`
+    ```python
+    heatmap = HeatMap(config, id_zone=123, zone_label="label", from_zome=True)
+    ```
     
     - This automatically calls `validate_id_zone(123)` and `prepare_partial_network(123)`.
     
     **Replacing all impact tables (full refresh)**
     
-    ```
+    ```python
     results = Results(config)
     results.replace_all_impacts_in_db()
     ```
@@ -148,7 +150,7 @@ class Results:
 
     **Checking if a partial network already exists**
     
-    ```
+    ```python
     results = Results(config)
     results.validate_id_zone(123)
     results.prepare_partial_network(123)  # If no update needed, nothing happens.

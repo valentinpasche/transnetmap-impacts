@@ -231,11 +231,11 @@ class HeatMap(Results):
 
     direction : dict
         Dictionary specifying the computation direction, with keys:  
-        - "primary": either "from" or "to" (depending on user selection)  
-        - "secondary": the inverse direction.  
+        - `"primary"`: either `"from"` or `"to"` (depending on user selection)  
+        - `"secondary"`: the inverse direction.  
 
     impacts : list of str
-        List of environmental impact types available for display (e.g., "EP", "CO2", "TCO").
+        List of environmental impact types available for display (e.g., `["EP", "CO2", "TCO"]`).
 
     network_config : ParamConfig
         Validated transport network configuration.
@@ -299,21 +299,21 @@ class HeatMap(Results):
         id_zone : int
             The zone ID to filter the data.
         zone_label : str
-            Human-readable label of the selected zone (e.g. "*Lausanne*", "*New York - JFK*").  
+            Human-readable label of the selected zone (e.g. `"Lausanne"`, `"New York - JFK"`).  
             This should be identified manually when using `Network.show_all()`.
         from_zone : bool, optional
             Whether to compute results **from** the zone (XOR with `to_zone`).  
-            If True, filters data where 'from' = id_zone. Default is False.
+            If `True`, filters data where `'from' = id_zone`. Default is `False`.
         to_zone : bool, optional
             Whether to compute results **to** the zone (XOR with `from_zone`).  
-            If True, filters data where 'to' = id_zone. Default is False.
+            If `True`, filters data where `'to' = id_zone`. Default is `False`.
         map_config : HeatMapConfig, optional
-            Custom configuration for heat map generation. If None, uses default configuration.
+            Custom configuration for heat map generation. If `None`, uses default configuration.
     
         Raises
         ------
         ValueError
-            If both `from_zone` and `to_zone` are True or False (must be XOR).
+            If both `from_zone` and `to_zone` are `True` or `False` (must be XOR).
         """        
         # Step 1: Initialize parent class (Results)
         super().__init__(network_config)  # Pass `network_config` explicitly to Results()

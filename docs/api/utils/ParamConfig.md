@@ -19,5 +19,4 @@
       group_by_category: true
       show_if_no_docstring: true
       filters:
-        - "!^_"
         - "!^validate_for_class"

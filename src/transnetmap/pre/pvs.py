@@ -36,9 +36,11 @@ class PVS_TravelTime:
     This class manages specific physical parameters or values related to travel time,
     allowing them to be retrieved, validated, updated, or stored in a PostgreSQL database.
     
-    *These tables are network-agnostic: to enable reuse across different geographic configurations, 
+    Guide
+    -----
+    These tables are network-agnostic: to enable reuse across different geographic configurations, 
     they must define a complete set of rows for all transport types and for all three NTS levels. 
-    Pipelines may ignore unused level rows at runtime.*
+    Pipelines may ignore unused level rows at runtime.
 
     Constants
     ---------
@@ -88,7 +90,7 @@ class PVS_TravelTime:
     Notes
     -----
     - Datasets are network-agnostic and must include parameters for all three NTS levels (low/main/high) to remain reusable 
-    across configurations; unused levels may be present with placeholder values and an explanatory 'comments' entry.
+    across configurations; unused levels may be present with placeholder values and an explanatory `'comments'` entry.
     - The class ensures that each physical value set is uniquely identified by its `physical_values_set_number`.
     - The `to_sql` and `read_sql` methods handle database interactions, while `read_csv` processes data from CSV files.
     - Validation ensures data integrity and adherence to the expected structure, whether loaded from CSV or SQL.
@@ -448,33 +450,33 @@ class PVS_TravelTime:
         
         Expected format
         ---------------
-        1) Columns: 
+        1) Columns : 
         
             ['name', 'value', 'unit', 'description', 'comments']  
         
-           - 'comments' is optional; others are mandatory.  
-           - 'value' must be a valid numeric value, except for the 'tf_name' row.  
-           - 'unit', 'description', and 'name' must be non-empty strings.  
-           - The 'name' column must include specific predefined keys (see below).  
+           - `'comments' is optional; others are mandatory.  
+           - `'value'` must be a valid numeric value, except for the `'tf_name'` row.  
+           - `'unit'`, `'description'` and `'name'` must be non-empty strings.  
+           - The `'name'` column must include specific predefined keys (see below).  
         
-        2) Row-specific rules:  
+        2) Row-specific rules :  
     
-           - Row with 'name' = 'tf_name':  
-               * 'value' must be a string representing the name of a time function.  
-           - Rows with other 'name' values:  
-               * 'value' must be numeric (float or int).  
-               * Corresponding 'unit' and 'description' fields must describe the value appropriately.  
+           - Row with `'name'` = `'tf_name'`:  
+               * `'value'` must be a string representing the name of a time function.  
+           - Rows with other `'name'` values:  
+               * `'value'` must be numeric (`float` or `int`).  
+               * Corresponding `'unit'` and `'description'` fields must describe the value appropriately.  
         
-        3) Required keys in 'name' column:  
+        3) Required keys in `'name'` column :  
     
-           - "tf_name": Name of the time function.  
-           - "l_ff", "m_ff", "h_ff": Fractal factors for different network levels (lower, main, higher).  
-           - "l_a_it", "l_b_it", "m_a_it", "m_b_it", "h_a_it", "h_b_it": Interface times (start and end) for network levels.  
-           - "l_aa", "l_ad", "m_aa", "m_ad", "h_aa", "h_ad": Average acceleration and deceleration for network levels.  
-           - "l_ts", "m_ts", "h_ts": Top speeds for network levels.  
+           - `"tf_name"` : Name of the time function.  
+           - `"l_ff"`, `"m_ff"`, `"h_ff"` : Fractal factors for different network levels (lower, main, higher).  
+           - `"l_a_it"`, `"l_b_it"`, `"m_a_it"`, `"m_b_it"`, `"h_a_it"`, `"h_b_it"` : Interface times (start and end) for network levels.  
+           - `"l_aa"`, `"l_ad"`, `"m_aa"`, `"m_ad"`, `"h_aa"`, `"h_ad"` : Average acceleration and deceleration for network levels.  
+           - `"l_ts"`, `"m_ts"`, `"h_ts"` : Top speeds for network levels.  
              
                *All low/main/high keys are mandatory even if the target network uses fewer levels; 
-               unused level values can be placeholders and should be documented via 'comments'.*
+               unused level values can be placeholders and should be documented via `'comments'`.*
 
         
         Parameters
@@ -487,7 +489,7 @@ class PVS_TravelTime:
         PVS_TravelTime
             The updated instance with attributes:  
             - `self.table`: Pandas DataFrame containing the validated CSV data.  
-            - `self.dct`: Dictionary representation of the data, keyed by 'name'.  
+            - `self.dct`: Dictionary representation of the data, keyed by `'name'`.  
         
         Raises
         ------
@@ -550,10 +552,12 @@ class PVS_Impacts:
     Represents a Physical Value Set of Impacts (e.g., CO2 and Primary Energy and Total Cost of Ownership).
     This class manages specific physical parameters related to environmental, energy and financial impacts,
     allowing them to be retrieved, validated, updated, or stored in a PostgreSQL database.
-
-    *These tables are network-agnostic: to enable reuse across different geographic configurations, 
+    
+    Guide
+    -----
+    These tables are network-agnostic: to enable reuse across different geographic configurations, 
     they must define a complete set of rows for all transport types and for all three NTS levels. 
-    Pipelines may ignore unused level rows at runtime.*
+    Pipelines may ignore unused level rows at runtime.
 
     Constants
     ---------
@@ -603,7 +607,7 @@ class PVS_Impacts:
     Notes
     -----
     - Datasets are network-agnostic and must include parameters for all three NTS levels (low/main/high) to remain reusable 
-    across configurations; unused levels may be present with placeholder values and an explanatory 'comments' entry.
+    across configurations; unused levels may be present with placeholder values and an explanatory `'comments'` entry.
     - The class ensures that each physical value set is uniquely identified by its `physical_values_set_number`.
     - The `to_sql` and `read_sql` methods handle database interactions, while `read_csv` processes data from CSV files.
     - Impact types (e.g., CO2, EP, TCO) are distinguished through the `impact_type` column.
@@ -995,30 +999,30 @@ class PVS_Impacts:
         
         Expected format
         ---------------
-        1) Columns: 
+        1) Columns : 
         
             ['type', 'max_distance', 'impact_type', 'impact_value', 'impact_unit',
              'motorization', 'load_percent', 'description', 'comments', 'sources']  
         
-           - 'comments' is optional; others are mandatory.  
-           - 'max_distance' and 'load_percent' can contain missing values, represented as '-'.  
-           - 'impact_value' must be a numeric value.  
-           - 'impact_type' must match the `impact_type` parameter passed to the method.  
-           - 'impact_unit', 'motorization', 'description', and 'sources' must have consistent values.  
+           - `'comments'` is optional; others are mandatory.  
+           - `'max_distance'` and `'load_percent'` can contain missing values, represented as `'-'`.  
+           - `'impact_value'` must be a numeric value (`float` or `int`).  
+           - `'impact_type'` must match the `impact_type` parameter passed to the method.  
+           - `'impact_unit'`, `'motorization'`, `'description'`, and `'sources'` must have consistent values.  
         
-        2) Row-specific rules
+        2) Row-specific rules :
                      
-           - 'type': Must match the keys defined in the `DCT_TYPE` dictionary.  
+           - `'type'`: Must match the keys defined in the ``DCT_TYPE`` dictionary.  
            *Network-level coverage: even if the target network uses only one or two levels, 
-           the 'type' column MUST include all three NTS levels ('NTS-lower', 'NTS-main', 'NTS-higher') in addition to the IMT/PT keys. 
-           Unused levels may carry placeholder numeric values and should be annotated in 'comments'.*  
-           - 'max_distance': For each 'type', the following rules apply:  
-               * If a 'type' is present only once, 'max_distance' must be NaN.  
-               * If a 'type' is present multiple times, exactly one row must have 'max_distance' = NaN,  
+           the `'type'` column MUST include all three NTS levels (`'NTS-lower'`, `'NTS-main'`, `'NTS-higher'`) in addition to the `'IMT'`/`'PT'` keys. 
+           Unused levels may carry placeholder numeric values and should be annotated in `'comments'`.*  
+           - `'max_distance'`: For each `'type'`, the following rules apply:  
+               * If a `'type'` is present only once, `'max_distance'` must be `NaN`.  
+               * If a `'type'` is present multiple times, exactly one row must have `'max_distance' = NaN`,  
                  and all other rows must have unique numeric values.  
-           - 'impact_type': Must match the `impact_type` parameter passed to the method.  
-           - 'impact_unit': All rows must have the same value.  
-           - 'impact_value': Must be a numeric value and cannot be null.  
+           - `'impact_type'`: Must match the `impact_type` parameter passed to the method.  
+           - `'impact_unit'`: All rows must have the same value.  
+           - `'impact_value'`: Must be a numeric value and cannot be null.  
         
         Parameters
         ----------
@@ -1039,7 +1043,7 @@ class PVS_Impacts:
         Notes
         -----
         - The method ensures that the CSV file adheres to strict structural and content requirements.
-        - Missing values for 'max_distance' and 'load_percent' are automatically converted to NaN for processing.
+        - Missing values for `'max_distance'` and `'load_percent'` are automatically converted to `NaN` for processing.
         - The validated data is stored in the `self.table` attribute for further operations.
         
         Examples

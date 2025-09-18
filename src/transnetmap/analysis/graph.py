@@ -239,18 +239,17 @@ class Graph(EdgeList):
         Returns
         -------
         self : Graph
-            The updated Graph instance with the following attributes:
+            The updated Graph instance with the following attributes :
                 
-            - `self.optimisation` (polars.DataFrame): A Polars DataFrame containing the optimisation results.
-              Sorted by 'from', 'to', and the optimisation metric ('time').
-              
-              Columns:
-                  
-                - 'from', 'to': int16 (node identifiers)
-                - 'type': int8 (type identifier)
-                - 'time': float32 (travel time in minutes)
-                - 'nb_edges': int8 (number of edges in the path : len(path) - 1)
-                - 'path': list(int16) (travel path, list of nodes)
+            - `self.optimisation` : `polars.DataFrame`  
+              A Polars DataFrame containing the optimisation results.  
+              Sorted by `'from'`, `'to'`, and the optimisation metric (`'time'`).  
+              Columns :  
+                - `'from'`, `'to'`: `int16` (node identifiers)
+                - `'type'`: `int8` (type identifier)
+                - `'time'`: `float32` (travel time in minutes)
+                - `'nb_edges'`: `int8` (number of edges in the path : `len(path) - 1`)
+                - `'path'`: `list(int16)` (travel path, list of nodes)
     
         Raises
         ------
@@ -440,8 +439,8 @@ class Graph(EdgeList):
         - The `adbc` engine is used for optimal writing performance with Polars DataFrames.
         - Paths are converted to a PostgreSQL-compatible array format before saving to the database.
         - The function modifies the data type of the `path` column in the database to:
-            SMALLINT[] (array of smallint).
-        - Adds a composite primary key on the columns ["from", "to"].
+            `SMALLINT[]` (array of smallint).
+        - Adds a composite primary key on the columns `["from", "to"]`.
         """
         from transnetmap.utils.sql import schema_exists, execute_sql_script, execute_primary_key_script
         import time
@@ -541,7 +540,7 @@ class Graph(EdgeList):
         Parameters
         ----------
         columns : list of str, optional
-            List of column names to select. If None, selects all columns (*).
+            List of column names to select. If None, selects all columns (`'*'`).
             Default is None.
         where_condition : str, optional
             SQL WHERE clause to filter the rows. If None, no filtering is applied.

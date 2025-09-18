@@ -44,68 +44,110 @@ class ParamConfig:
     
     Examples
     --------
-        # Direct instantiation (unpack required):  
-        >>> param = {"network_number": 1, "db_nptm_schema": "myschema", ...}
-        >>> config = ParamConfig(**param)  # keys are mapped to fields via **
+    ```python
+    # Direct instantiation (unpack required):  
+    >>> param = {"network_number": 1, "db_nptm_schema": "myschema", ...}
+    >>> config = ParamConfig(**param)  # keys are mapped to fields via **
     
-        # Within a transnetmap class (no unpack needed, accepts dict or ParamConfig):
-        >>> class NPTM:
-        ...     def __init__(self, param: Union[dict, ParamConfig], required_fields=None):
-        ...         
-        ...         # Case 1: param is a dictionary
-        ...         if isinstance(param, dict):
-        ...         self.config = ParamConfig(**param, required_fields=required_fields)
-        ...         self.config.validate()
-        ...         
-        ...         # Case 2: param is already a ParamConfig
-        ...         elif isinstance(param, ParamConfig):
-        ...         self.config = param  # Use the existing ParamConfig
-        ...         self.config.validate_for_class(required_fields)
-        ...
-        >>> nptm = NPTM(param={"network_number": 1, "db_nptm_schema": "myschema", ...})
+    # Within a transnetmap class (no unpack needed, accepts dict or ParamConfig):
+    >>> class NPTM:
+    ...     def __init__(self, param: Union[dict, ParamConfig], required_fields=None):
+    ...         
+    ...         # Case 1: param is a dictionary
+    ...         if isinstance(param, dict):
+    ...         self.config = ParamConfig(**param, required_fields=required_fields)
+    ...         self.config.validate()
+    ...         
+    ...         # Case 2: param is already a ParamConfig
+    ...         elif isinstance(param, ParamConfig):
+    ...         self.config = param  # Use the existing ParamConfig
+    ...         self.config.validate_for_class(required_fields)
+    ...
+    >>> nptm = NPTM(param={"network_number": 1, "db_nptm_schema": "myschema", ...})
+    ```
 
     Attributes
     ----------
     network_number : Optional[int]
-        Identification number for the network being created or manipulated. This is
-        typically required for all transnetmap classes.
+        Identification number for the network being created or manipulated.
+        
+        Required for all transnetmap classes, except PVS classes.
+        
     physical_values_set_number : Optional[int]
         Identification number for the physical value set (PVS) used in conjunction
-        with specific networks or scenarios. Required for analysis and post-processing.
+        with specific networks or scenarios.
+        
+        Required for analysis and post-processing.
+        
     network_extension_type : Optional[str]
         Specifies the type of transportation to use for extending the network in analysis.
-        Accepted values are:
-            - 'IMT': Refers to the Individual Motorized Transport table.
-            - 'PT' : Refers to the Public Transport table.
-        This parameter determines which dataset is used to supplement the network
+        
+        This parameter determines which dataset is used to supplement the network 
         with additional information during computations such as Dijkstra's algorithm.
+        
+        Accepted values are :  
+        
+          - `'IMT'`: Refers to the Individual Motorized Transport table.  
+          - `'PT'` : Refers to the Public Transport table.  
+        
     db_nptm_schema : Optional[str]
-        Name of the schema in the PostgreSQL database that contains data from the
-        National Passenger Traffic Model (NPTM). Commonly used for zone and travel
-        data management. This schema serves as a namespace for the model and acts as
-        an identifier used in constructing dependent table names.
+        Name of the schema in the PostgreSQL database that contains data from the 
+        National Passenger Traffic Model (NPTM).
+        
+        Commonly used for zone and travel data management.
+        
+        This schema serves as a namespace for the model and acts as an identifier used 
+        in constructing dependent table names.
+        
     db_zones_table : Optional[str]
-        Name of the table containing data relating to NPTM zones. This table is
-        essential for spatial operations and visual outputs such as heat maps.
+        Name of the table containing data relating to NPTM zones.
+        
+        This table is essential for spatial operations and visual outputs such as heat maps.
+        
     db_imt_table : Optional[str]
-        Name of the table containing Individual Motorized Transport (IMT) data, such
-        as travel times and distances. Used in NPTM-related computations and post-processing.
+        Name of the table containing Individual Motorized Transport (IMT) data, such 
+        as travel times and distances.
+        
+        Used in NPTM-related computations and post-processing.
+        
     db_pt_table : Optional[str]
-        Name of the table containing Public Transport (PT) data, such as travel
-        times and distances. Used in NPTM-related computations and post-processing.
+        Name of the table containing Public Transport (PT) data, such as travel 
+        times and distances.
+        
+        Used in NPTM-related computations and post-processing.
+        
     uri : Optional[str]
-        Connection string for the PostgreSQL database, formatted as
-        ``postgresql://username:password@host:port/database``. This is required for any
-        database interaction.
+        Connection string for the PostgreSQL database.
+        
+        This value must be edited with your own connection details :  
+        `user`, `password`, `host`, `port`, and `database` 
+        must be replaced according to your environment.
+        
+        Example:
+            ``postgresql://user:password@host:port/database``
+        
+        The caller is responsible for escaping any special characters 
+        (e.g. in the password) and for keeping this string secure, 
+        as it may contain sensitive credentials.
+        
+        This field is required for any database interaction.
+        
     main_print : bool
         Controls whether general execution information should be printed to the
-        console. Useful for monitoring progress in scripts or debugging.
+        console.
+        
+        Useful for monitoring progress in scripts or debugging.
+        
     sql_echo : bool
         Controls whether SQL statements executed via SQLAlchemy should be logged
-        to the console. Primarily useful for debugging database interactions.
+        to the console.
+        
+        Primarily useful for debugging database interactions.
+        
     required_fields : List[str]
-        List of field names that are required for validation. This is set
-        dynamically in the context of each class that uses ParamConfig.
+        List of field names that are required for validation.
+        
+        This is set dynamically in the context of each class that uses `ParamConfig`.
     """
 
     # Global parameters (common to all classes)
@@ -192,7 +234,7 @@ class ParamConfig:
 
     def _validate_network_extension_type(self) -> None:
         """
-        Validate the 'network_extension_type' parameter.
+        Validate the network extension transport type field.
         """
         if not self.network_extension_type:
             return  # Skip validation if network_extension_type is not required
@@ -205,7 +247,7 @@ class ParamConfig:
 
     def validate_for_class(self, required_fields: List[str]) -> None:
         """
-        Validate that the specified required fields are present in the ParamConfig object.
+        Validate that the specified required fields are present in the `ParamConfig` object.
 
         Parameters
         ----------

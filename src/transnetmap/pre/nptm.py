@@ -865,7 +865,7 @@ class NPTM:
         table_name : str
             Name of the table (e.g., IMT, PT, or zones).
         columns : list of str, optional
-            List of column names to select. If None, selects all columns (*).
+            List of column names to select. If None, selects all columns (`'*'`).
             Default is None.
         where_condition : str, optional
             SQL WHERE clause to filter the rows. If None, no filtering is applied.
@@ -906,7 +906,7 @@ class NPTM:
         table_name : str
             Name of the table to read from (e.g., IMT or PT).
         columns : list of str, optional
-            List of column names to select. If None, selects all columns (*).
+            List of column names to select. If None, selects all columns (`'*'`).
             Default is None.
         where_condition : str, optional
             SQL WHERE clause to filter the rows. If None, no filtering is applied.
@@ -997,7 +997,7 @@ class NPTM:
         table_name : str
             Name of the zones table.
         columns : list of str, optional
-            List of column names to select. If None, selects all columns (*).
+            List of column names to select. If None, selects all columns (`'*'`).
             Default is None.
         where_condition : str, optional
             SQL WHERE clause to filter the rows. If None, no filtering is applied.

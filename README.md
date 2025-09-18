@@ -43,28 +43,15 @@ Environmental/techno-economic impacts (e.g. `CO2`, `EP`, `TCO`) are then **compu
 
 ## Installation (stable)
 
-Installing this package requires a Conda virtual environment to manage dependencies in isolation.  
-It is not distributed on public channels such as **PyPI** (pip) or **Conda-Forge**.  
-
-The stable environment installs the package from a **GitHub tag ZIP**,  
-and all its dependencies from conda-forge.
-
 ```bash
-# Creates the environment from the configuration file
 conda env create -f environment.yml
-
-# Activates the newly created environment
 conda activate transnetmap
-
-# Installation verification
-python -c "import transnetmap as tnm; print('OK:', tnm.__name__)"
+python -c "import transnetmap as tnm; print('OK:', tnm.__name__, 'version:', getattr(tnm, '__version__', '?'))"
 ```
 
-**Requirements**
+> The environment uses **conda-forge** only and installs the package from the **GitHub tag ZIP** referenced in `environment.yml`.
 
-- Python 3.12
-- PostgreSQL with **PostGIS** enabled (not included)
-- See `environment.yml` for the full dependency list (e.g. `networkx`, `geopandas`, `polars`, `folium`, `pyarrow`, ADBC drivers for Polars).
+For development and more details, see the [Installation guide ↗](https://transnetmap-impacts.readthedocs.io/en/stable/installation/).
 
 ---
 

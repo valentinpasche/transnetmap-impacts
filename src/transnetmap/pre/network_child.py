@@ -309,13 +309,16 @@ class Stations:
         
         Expected format
         ---------------
-        1) Columns: 
+        1) Columns : 
         
             ['CODE', 'NAME', 'LAT', 'LNG']  
         
-           - Column separator: ';'  
-           - Decimal separator: '.'  
-           - Latitude and longitude coordinates: WGS 84 (EPSG:4326)  
+           - Data type :  
+               * `'CODE'`, `'NAME'` : `str`  
+               * `'LAT'`, `'LNG'` : `float`  
+           - Column separator : `';'`  
+           - Decimal separator : `'.'`  
+           - Latitude and longitude coordinates : **WGS 84** (EPSG:4326)  
     
         Parameters
         ----------
@@ -326,7 +329,7 @@ class Stations:
         -------
         self.table : geopandas.GeoDataFrame
             A GeoDataFrame containing the validated station data, including geometries
-            in EPSG:4326 and zone associations.
+            in **EPSG:4326** and zone associations.
     
         Raises
         ------
@@ -819,20 +822,19 @@ class Links:
         """
         Reads a CSV file containing link data and validates its content.
     
-        The table created lists the associations of station codes for three different
-        link levels: lower (1), main (2), and higher (3). The method performs
-        several validations, including checks for missing columns, incomplete
-        links, and duplicate links (both direct and reverse).
+        The table created lists the associations of station codes, 
+        for three different link levels: lower (1), main (2) and higher (3).  
+        The method performs several validations, including checks for missing columns, 
+        incomplete links, and duplicate links (both direct and reverse).
         
         Expected format
         ---------------
-        1) Columns: 
+        1) Columns : 
         
             ['LOWER_A', 'LOWER_B', 'MAIN_A', 'MAIN_B', 'HIGHER_A', 'HIGHER_B']  
         
-           - Column separator: ';'  
-           - Decimal separator: '.'  
-           - Latitude and longitude coordinates: WGS 84 (EPSG:4326)  
+           - Data type, all columns : `str`  
+           - Column separator : `';'`  
            - Column pairs may be empty (level not present in the network). They are ignored.
         
         Parameters
@@ -844,7 +846,7 @@ class Links:
         -------
         self.table : pandas.DataFrame
             A DataFrame containing the validated and sorted link data.
-            Columns: ['lower_a', 'lower_b', 'main_a', 'main_b', 'higher_a', 'higher_b']
+            Columns: `['lower_a', 'lower_b', 'main_a', 'main_b', 'higher_a', 'higher_b']`
     
         Raises
         ------

@@ -1,5 +1,9 @@
 
-{% include-markdown "../README.md" start="<!-- badges:start -->" end="<!-- badges:end -->" %}
+[![Docs (stable)](https://img.shields.io/readthedocs/transnetmap-impacts/stable?label=Read%20the%20Docs)](https://transnetmap-impacts.readthedocs.io/en/stable/)
+[![Docs (latest)](https://img.shields.io/readthedocs/transnetmap-impacts/latest?label=Docs%20latest)](https://transnetmap-impacts.readthedocs.io/en/latest/)
+[![GitHub release](https://img.shields.io/github/v/release/valentinpasche/transnetmap-impacts)](https://github.com/valentinpasche/transnetmap-impacts/releases)
+![Python](https://img.shields.io/badge/python-3.12-blue)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](license.md)
 
 <p align="center">
   <img src="assets/logo-light.png" alt="transnetmap-impacts logo" width="420" class="only-light">
