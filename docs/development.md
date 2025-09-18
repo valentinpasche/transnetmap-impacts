@@ -29,3 +29,4 @@ mkdocs serve
     - `transnetmap-impacts/pyproject.toml`
     - `transnetmap-impacts/src/transnetmap/__init__.py`
     - `transnetmap-impacts/DESING.md`
+    - `transnetmap-impacts/docs/installation.md`

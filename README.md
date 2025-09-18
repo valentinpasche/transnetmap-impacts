@@ -1,12 +1,11 @@
 # transnetmap-impacts
 
-<!-- badges:start -->
+
 [![Docs (stable)](https://img.shields.io/readthedocs/transnetmap-impacts/stable?label=Read%20the%20Docs)](https://transnetmap-impacts.readthedocs.io/en/stable/)
 [![Docs (latest)](https://img.shields.io/readthedocs/transnetmap-impacts/latest?label=Docs%20latest)](https://transnetmap-impacts.readthedocs.io/en/latest/)
 [![GitHub release](https://img.shields.io/github/v/release/valentinpasche/transnetmap-impacts)](https://github.com/valentinpasche/transnetmap-impacts/releases)
 ![Python](https://img.shields.io/badge/python-3.12-blue)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-<!-- badges:end -->
 
 
 <p align="center">
@@ -16,9 +15,6 @@
     <img alt="transnetmap-impacts logo" src="docs/assets/logo-light.png" width="420">
   </picture>
 </p>
-
-
-<!-- docs:start -->
 
 
 **A Python package for macro-scale analysis of new transport networks vs existing ones with impacts choropleth maps.**
@@ -94,6 +90,12 @@ While the documentation illustrates the workflow on a **Switzerland** case study
 
 ---
 
+## License
+
+This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.
+
+---
+
 ## Support
 
 Found a bug, or have a feature request, raise an issue on the
@@ -109,14 +111,4 @@ Alternatively you can get support on the
 - **No warranty on accuracy or completeness** of results is provided. Outputs depend on input data quality, simplifying assumptions, and configuration choices.  
 - Proper interpretation requires domain expertise and awareness of data limitations (e.g., sources, spatial coverage, temporal representativeness).  
 - Use the results as **decision support** for exploration and screening; do not rely on them for detailed design, operational planning, or financial commitments without further analysis.
-
-
-<!-- docs:end -->
-
-
----
-
-## License
-
-This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.
 
